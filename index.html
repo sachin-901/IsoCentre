@@ -25,7 +25,7 @@
         </section>
 
         <details class="worksheet-section" open>
-            <summary><h2>1. Reference Conditions</h2></summary>
+            <summary><h2>1. Measurement Conditions</h2></summary>
             <div class="section-content">
                 <div class="info-grid">
                     <div class="form-group">
@@ -66,6 +66,7 @@
             </div>
         </details>
 
+        <!-- Collapsed by default -->
         <details class="worksheet-section">
             <summary><h2>3. Influence Quantities & Corrections</h2></summary>
             <div class="section-content">
@@ -199,7 +200,7 @@
                                 <th>Ref Output <span class="required">*</span><br><span id="th-ref-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
                                 <th>D<sub>w</sub>(z<sub>max</sub>)<br><span id="th-dzmax-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
                                 <th>Var<br>(%)</th>
-                                <th>Act</th>
+                                <th class="no-print">Act</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -208,7 +209,7 @@
                     </table>
                 </div>
                 
-                <div style="margin-top: 10px;">
+                <div class="no-print" style="margin-top: 10px;">
                     <button id="addRowBtn" class="btn" style="background-color: #28a745; font-size: 14px; padding: 8px 16px;">+ Add Energy Row</button>
                 </div>
                 
