@@ -51,12 +51,41 @@ header p { margin: 0; color: #666; }
 
 .worksheet-section { margin-bottom: 30px; }
 
-.worksheet-section h2 {
+/* Collapsible sections styling */
+details.worksheet-section summary {
+    list-style: none; /* Hide default arrow */
+    cursor: pointer;
+    outline: none;
+}
+details.worksheet-section summary::-webkit-details-marker {
+    display: none;
+}
+details.worksheet-section summary h2 {
     font-size: 18px;
     background-color: #eef2f5;
     padding: 8px 12px;
     border-left: 4px solid #0056b3;
     margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0;
+}
+details.worksheet-section summary h2::after {
+    content: '▼';
+    font-size: 14px;
+    color: #0056b3;
+}
+details[open].worksheet-section summary h2::after {
+    content: '▲';
+}
+.section-content {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .subsection h3 { font-size: 15px; color: #444; margin-bottom: 5px; }
@@ -66,6 +95,12 @@ header p { margin: 0; color: #666; }
     color: #666;
     margin-top: 0;
     margin-bottom: 10px;
+}
+
+.required {
+    color: #d9534f;
+    font-weight: bold;
+    margin-left: 2px;
 }
 
 .info-grid {
@@ -84,7 +119,7 @@ header p { margin: 0; color: #666; }
     font-size: 14px; 
 }
 
-/* Fix for pressure input overflow */
+/* Fix for input units overflowing */
 .input-with-unit { 
     display: flex; 
     gap: 5px; 
@@ -92,10 +127,10 @@ header p { margin: 0; color: #666; }
 }
 .input-with-unit input { 
     flex: 1; 
-    min-width: 0; /* allows flex item to shrink properly */
+    min-width: 0; 
 }
 .input-with-unit select { 
-    width: 85px; 
+    width: auto; 
     flex-shrink: 0; 
 } 
 
@@ -168,14 +203,18 @@ header p { margin: 0; color: #666; }
     vertical-align: middle;
 }
 .dose-table th { background: #eef2f5; color: #0056b3; }
-.dose-table input {
-    width: 70px;
+.dose-table input, .dose-table select {
     padding: 4px;
     border: 1px solid #ccc;
     border-radius: 3px;
     text-align: center;
     font-size: 12px;
 }
+
+.inp-energy { width: 50px; }
+.inp-energy-mode { width: 55px; margin-left: 2px; }
+.inp-kq, .inp-pdd, .inp-ref { width: 65px; }
+
 .mraw-inputs { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; }
 .mraw-inputs input { width: 60px; }
 .mraw-avg-display { font-weight: bold; color: #0056b3; font-size: 12px; }
@@ -199,6 +238,8 @@ header p { margin: 0; color: #666; }
     .no-print { display: none !important; }
     .container { box-shadow: none; border: none; padding: 0; max-width: 100%; }
     
+    details.worksheet-section summary h2::after { display: none; } /* Hide accordion arrows */
+    
     input[type="text"], input[type="number"], input[type="date"], select { 
         border: none !important; 
         background: transparent !important; 
@@ -214,5 +255,5 @@ header p { margin: 0; color: #666; }
     .calc-result, .summary-box, .coeff-display { background: transparent; border: 1px solid #ccc; }
     
     .dose-table input { width: auto; font-size: 13px; }
-    .mraw-inputs input { width: 50px; }
+    .mraw-inputs input { width: 45px; }
 }
