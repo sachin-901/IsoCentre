@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('a0_val').textContent = "N/A";
                 document.getElementById('a1_val').textContent = "N/A";
                 document.getElementById('a2_val').textContent = "N/A";
-                document.getElementById('kS_result').textContent = "Out of Bounds (Use V1/V2 = 2 to 5)";
+                document.getElementById('kS_result').textContent = "Out of Bounds";
                 kS = null; 
             }
         } else {
@@ -262,13 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
     addEnergyRow();
 
-    // Helper padding function for PDF building
-    function padArray(arr, len) {
-        let res = [...arr];
-        while(res.length < len) res.push('---');
-        return res;
-    }
-
     // --- PDFMAKE Custom PDF Generation ---
     document.getElementById('generatePdfBtn').addEventListener('click', () => {
         
@@ -281,13 +274,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const fSize = getText('fieldSize');
         const mu = getText('num_mu');
 
-        const kTP = document.getElementById('kTP_result').textContent;
-        const kPol = document.getElementById('kPol_result').textContent;
-        const kS = document.getElementById('kS_result').textContent;
-        const kElec = getText('kelec');
-
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
+
+        // ---- BUILD DYNAMIC k_TP TABLE ----
+        let ktpTable = {
+            widths: ['auto', 'auto'],
+            body: [
+                [{text: 'Parameter', style: 'th'}, {text: 'Value', style: 'th'}],
+                [{text: 'T0 [°C]', style: 'label'}, {text: getText('t0'), style: 'cell'}],
+                [{text: `P0 [${document.getElementById('p0_unit').value}]`, style: 'label'}, {text: getText('p0'), style: 'cell'}],
+                [{text: 'Measured T [°C]', style: 'label'}, {text: getText('t_meas'), style: 'cell'}],
+                [{text: `Measured P [${document.getElementById('p_meas_unit').value}]`, style: 'label'}, {text: getText('p_meas'), style: 'cell'}],
+                [{text: 'k_TP', style: 'label'}, {text: document.getElementById('kTP_result').textContent, style: 'cell', bold: true}]
+            ]
+        };
 
         // ---- BUILD DYNAMIC k_pol TABLE ----
         let posArr = getReadingsArray('m_pos');
@@ -295,18 +296,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let polCols = Math.max(posArr.length, negArr.length, 0);
 
         let polHeader = [{text: 'Polarity', style: 'th'}];
-        if (polCols > 1) { for(let i=1; i<=polCols; i++) polHeader.push({text: `Rdg ${i}`, style: 'th'}); }
-        polHeader.push({text: 'Avg', style: 'th'}, {text: 'k_pol', style: 'th'});
+        if (polCols > 0) { for(let i=1; i<=polCols; i++) polHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        polHeader.push({text: 'Avg', style: 'th'});
 
-        let posRow = [{text: 'Positive (+)', style: 'cell'}];
-        if (polCols > 1) posRow.push(...padArray(posArr, polCols).map(x => ({text: x, style: 'cell'})));
-        posRow.push({text: document.getElementById('m_pos_avg').textContent, style: 'label'});
-        posRow.push({text: kPol, rowSpan: 2, style: 'label', margin: [0, 8, 0, 0]}); 
+        let posRow = [{text: 'Positive (+)', style: 'label'}];
+        if (polCols > 0) {
+            for(let i=0; i<polCols; i++) { posRow.push({text: posArr[i] || '---', style: 'cell'}); }
+        }
+        posRow.push({text: document.getElementById('m_pos_avg').textContent, style: 'cell'});
 
-        let negRow = [{text: 'Negative (-)', style: 'cell'}];
-        if (polCols > 1) negRow.push(...padArray(negArr, polCols).map(x => ({text: x, style: 'cell'})));
-        negRow.push({text: document.getElementById('m_neg_avg').textContent, style: 'label'});
-        negRow.push('');
+        let negRow = [{text: 'Negative (-)', style: 'label'}];
+        if (polCols > 0) {
+            for(let i=0; i<polCols; i++) { negRow.push({text: negArr[i] || '---', style: 'cell'}); }
+        }
+        negRow.push({text: document.getElementById('m_neg_avg').textContent, style: 'cell'});
+
+        let kPolResultRow = [
+            {text: 'k_pol =', colSpan: polCols > 0 ? polCols + 1 : 1, style: 'label', alignment: 'right'}, 
+            ...Array(polCols > 0 ? polCols : 0).fill(''), 
+            {text: document.getElementById('kPol_result').textContent, style: 'cell', bold: true}
+        ];
+
+        let polTable = {
+            widths: Array(polHeader.length).fill('auto'),
+            body: [ polHeader, posRow, negRow, kPolResultRow ]
+        };
 
         // ---- BUILD DYNAMIC k_s TABLE ----
         let m1Arr = getReadingsArray('m1');
@@ -314,26 +328,42 @@ document.addEventListener('DOMContentLoaded', () => {
         let ksCols = Math.max(m1Arr.length, m2Arr.length, 0);
 
         let ksHeader = [{text: 'Voltage [V]', style: 'th'}];
-        if (ksCols > 1) { for(let i=1; i<=ksCols; i++) ksHeader.push({text: `Rdg ${i}`, style: 'th'}); }
-        ksHeader.push({text: 'Avg', style: 'th'}, {text: 'Coeffs (a0, a1, a2)', style: 'th'}, {text: 'k_s', style: 'th'});
+        if (ksCols > 0) { for(let i=1; i<=ksCols; i++) ksHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        ksHeader.push({text: 'Avg', style: 'th'});
 
-        let v1 = getText('v1'), v2 = getText('v2');
-        let a0 = document.getElementById('a0_val').textContent;
-        let a1 = document.getElementById('a1_val').textContent;
-        let a2 = document.getElementById('a2_val').textContent;
-        let coeffsText = `${a0}\n${a1}\n${a2}`;
+        let ksRow1 = [{text: `Normal (${getText('v1')}V)`, style:'label'}];
+        if (ksCols > 0) {
+            for(let i=0; i<ksCols; i++) ksRow1.push({text: m1Arr[i] || '---', style: 'cell'});
+        }
+        ksRow1.push({text: document.getElementById('m1_avg').textContent, style:'cell'});
 
-        let ksRow1 = [{text: `Normal (${v1}V)`, style:'cell'}];
-        if (ksCols > 1) ksRow1.push(...padArray(m1Arr, ksCols).map(x => ({text: x, style: 'cell'})));
-        ksRow1.push({text: document.getElementById('m1_avg').textContent, style:'label'});
-        ksRow1.push({text: coeffsText, rowSpan: 2, fontSize: 10, alignment: 'center', margin: [0,5,0,0]});
-        ksRow1.push({text: kS, rowSpan: 2, style:'label', margin: [0,12,0,0]});
+        let ksRow2 = [{text: `Reduced (${getText('v2')}V)`, style:'label'}];
+        if (ksCols > 0) {
+            for(let i=0; i<ksCols; i++) ksRow2.push({text: m2Arr[i] || '---', style: 'cell'});
+        }
+        ksRow2.push({text: document.getElementById('m2_avg').textContent, style:'cell'});
 
-        let ksRow2 = [{text: `Reduced (${v2}V)`, style:'cell'}];
-        if (ksCols > 1) ksRow2.push(...padArray(m2Arr, ksCols).map(x => ({text: x, style: 'cell'})));
-        ksRow2.push({text: document.getElementById('m2_avg').textContent, style:'label'});
-        ksRow2.push('');
-        ksRow2.push('');
+        let ksResultRow = [
+            {text: 'k_s =', colSpan: ksCols > 0 ? ksCols + 1 : 1, style: 'label', alignment: 'right'}, 
+            ...Array(ksCols > 0 ? ksCols : 0).fill(''), 
+            {text: document.getElementById('kS_result').textContent, style: 'cell', bold: true}
+        ];
+
+        let ksTable = {
+            widths: Array(ksHeader.length).fill('auto'),
+            body: [ ksHeader, ksRow1, ksRow2, ksResultRow ]
+        };
+
+        // Coeffs small table
+        let coeffsTable = {
+            widths: ['auto', 'auto', 'auto'],
+            body: [
+                [{text: 'a0', style: 'th'}, {text: 'a1', style: 'th'}, {text: 'a2', style: 'th'}],
+                [{text: document.getElementById('a0_val').textContent, style: 'cell'},
+                 {text: document.getElementById('a1_val').textContent, style: 'cell'},
+                 {text: document.getElementById('a2_val').textContent, style: 'cell'}]
+            ]
+        };
 
         // ---- BUILD DYNAMIC FINAL TABLE ----
         let finalRowsData = [];
@@ -353,9 +383,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let finalHeader = [{text: 'Energy', style: 'th'}];
-        if (maxFinalCols > 1) { for(let i=1; i<=maxFinalCols; i++) finalHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        if (maxFinalCols > 0) { for(let i=1; i<=maxFinalCols; i++) finalHeader.push({text: `M_raw ${i}`, style: 'th'}); }
         finalHeader.push(
-            {text: 'Avg Mraw', style: 'th'},
+            {text: 'Avg\nM_raw', style: 'th'},
             {text: 'kQ', style: 'th'},
             {text: pddOrTpr, style: 'th'},
             {text: `Ref Output\n[${refUnit}]`, style: 'th'},
@@ -384,7 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
                              (varObj.style.color === 'rgb(92, 184, 92)') ? '#5cb85c' : '#333';
 
             let pdfRow = [{text: engStr, style: 'label'}];
-            if (maxFinalCols > 1) { pdfRow.push(...padArray(arr, maxFinalCols).map(x => ({text: x, style: 'cell'}))); }
+            if (maxFinalCols > 0) {
+                for(let i=0; i<maxFinalCols; i++) { pdfRow.push({text: arr[i] || '---', style: 'cell'}); }
+            }
             pdfRow.push(
                 {text: mraw_avg, style: 'label'},
                 {text: kq, style: 'cell'}, {text: pdd, style: 'cell'}, {text: ref, style: 'cell'},
@@ -427,6 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Section 1 & 2: Info Tables
                 {
+                    pageBreak: 'avoid',
                     columns: [
                         {
                             width: '48%',
@@ -459,65 +492,74 @@ document.addEventListener('DOMContentLoaded', () => {
                     ]
                 },
 
-                { text: '3. Applied Correction Factors', style: 'sectionHeader' },
+                { text: '3. Applied Correction Factors', style: 'sectionHeader', pageBreak: 'avoid' },
                 
-                // kTP Table
                 {
-                    style: 'tableWrapper',
-                    table: {
-                        widths: ['*', '*', '*', '*', '*'],
-                        headerRows: 1,
-                        body: [
-                            [ {text: 'T0 [°C]', style: 'th'}, {text: 'P0', style: 'th'}, {text: 'T_meas [°C]', style: 'th'}, {text: 'P_meas', style: 'th'}, {text: 'k_TP', style: 'th'} ],
-                            [ 
-                                {text: getText('t0'), style: 'cell'}, 
-                                {text: `${getText('p0')} ${document.getElementById('p0_unit').value}`, style: 'cell'}, 
-                                {text: getText('t_meas'), style: 'cell'}, 
-                                {text: `${getText('p_meas')} ${document.getElementById('p_meas_unit').value}`, style: 'cell'}, 
-                                {text: kTP, style: 'label'} 
-                            ]
-                        ]
-                    },
-                    layout: 'lightHorizontalLines'
+                    columns: [
+                        // Column 1: kTP Table
+                        {
+                            width: 'auto',
+                            margin: [0,0,15,0],
+                            pageBreak: 'avoid',
+                            table: ktpTable
+                        },
+                        // Column 2: kPol Table
+                        {
+                            width: 'auto',
+                            margin: [0,0,15,0],
+                            pageBreak: 'avoid',
+                            table: polTable
+                        },
+                        // Column 3: kElec Table
+                        {
+                            width: 'auto',
+                            pageBreak: 'avoid',
+                            table: {
+                                widths: ['auto', 'auto'],
+                                body: [
+                                    [{text: 'Factor', style: 'th'}, {text: 'Value', style: 'th'}],
+                                    [{text: 'k_elec', style: 'label'}, {text: getText('kelec'), style: 'cell'}]
+                                ]
+                            }
+                        }
+                    ]
                 },
 
-                // kPol Table
+                // kS Table and Coeffs below it
                 {
-                    style: 'tableWrapper',
-                    table: {
-                        widths: Array(polHeader.length).fill('*'),
-                        headerRows: 1,
-                        body: [ polHeader, posRow, negRow ]
-                    },
-                    layout: 'lightHorizontalLines'
+                    pageBreak: 'avoid',
+                    margin: [0, 15, 0, 0],
+                    columns: [
+                        {
+                            width: 'auto',
+                            table: ksTable
+                        }
+                    ]
+                },
+                {
+                    pageBreak: 'avoid',
+                    margin: [0, 5, 0, 15],
+                    columns: [
+                        {
+                            width: 'auto',
+                            table: coeffsTable
+                        }
+                    ]
                 },
 
-                // kS Table
+                { text: '4. Absorbed Dose to Water Results', style: 'sectionHeader', pageBreak: 'avoid' },
                 {
-                    style: 'tableWrapper',
-                    table: {
-                        widths: Array(ksHeader.length).fill('*'),
-                        headerRows: 1,
-                        body: [ ksHeader, ksRow1, ksRow2 ]
-                    },
-                    layout: 'lightHorizontalLines'
-                },
-
-                // kElec Note
-                { text: `Electrometer Factor (k_elec): ${kElec}`, margin: [0, 0, 0, 15], bold: true, fontSize: 11, alignment: 'right' },
-
-                { text: '4. Absorbed Dose to Water Results', style: 'sectionHeader' },
-                {
+                    pageBreak: 'avoid',
                     table: {
                         headerRows: 1,
-                        widths: Array(finalHeader.length).fill('auto'), // 'auto' allows tight wrapping
+                        widths: Array(finalHeader.length).fill('auto'), 
                         body: resultsTableBody
-                    },
-                    layout: 'lightHorizontalLines'
+                    }
                 },
 
                 // Signatures
                 {
+                    pageBreak: 'avoid',
                     columns: [
                         {
                             text: `Performed by:\n\n\n___________________________\n${getText('userName')}`,
