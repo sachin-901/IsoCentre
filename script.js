@@ -5,9 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logoInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
-        reader.onloadend = function() {
-            logoBase64 = reader.result;
-        }
+        reader.onloadend = function() { logoBase64 = reader.result; }
         if(file) reader.readAsDataURL(file);
     });
 
@@ -31,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         phantomOther.style.display = phantomSelect.value === 'Other' ? 'block' : 'none';
     });
 
-    // --- 3. Bi-Directional Sync: Routine M <--> M1 ---
+    // --- 2. Bi-Directional Sync: Routine M <--> M1 ---
     const mPosInputs = [document.getElementById('m_pos_1'), document.getElementById('m_pos_2'), document.getElementById('m_pos_3')];
     const mNegInputs = [document.getElementById('m_neg_1'), document.getElementById('m_neg_2'), document.getElementById('m_neg_3')];
     const m1Inputs = [document.getElementById('m1_1'), document.getElementById('m1_2'), document.getElementById('m1_3')];
@@ -87,6 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
         let avg = sum / count;
         document.getElementById(baseId + '_avg').textContent = avg.toFixed(4);
         return avg;
+    }
+
+    // Array compaction for dynamic PDF columns
+    function getReadingsArray(baseId) {
+        let arr = [];
+        let v1 = getVal(baseId + '_1'), v2 = getVal(baseId + '_2'), v3 = getVal(baseId + '_3');
+        if (v1 !== null) arr.push(v1);
+        if (v2 !== null) arr.push(v2);
+        if (v3 !== null) arr.push(v3);
+        return arr;
     }
 
     // --- Main Calculation ---
@@ -154,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ndw = getVal('ndw');
         const numMu = getVal('num_mu');
         const refDoseUnit = document.getElementById('refDoseUnit').value;
-        const tolerance = parseFloat(document.getElementById('toleranceSelect').value); // 2 or 3
+        const tolerance = parseFloat(document.getElementById('toleranceSelect').value); 
 
         const globalFactor = (kTP !== null && kPol !== null && kS !== null) ? (kTP * kElec * kPol * kS) : null;
         const rows = document.querySelectorAll('#doseTable tbody tr');
@@ -243,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><input type="number" step="0.01" class="row-input inp-ref"></td>
             <td class="td-result out-dzmax">---</td>
             <td class="td-result out-var">---</td>
-            <td><button class="remove-btn">X</button></td>
+            <td class="no-print"><button class="remove-btn">X</button></td>
         `;
         
         tr.querySelectorAll('.row-input').forEach(inp => inp.addEventListener('input', calculateAllDoses));
@@ -253,6 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
     addEnergyRow();
+
+    // Helper padding function for PDF building
+    function padArray(arr, len) {
+        let res = [...arr];
+        while(res.length < len) res.push('---');
+        return res;
+    }
 
     // --- PDFMAKE Custom PDF Generation ---
     document.getElementById('generatePdfBtn').addEventListener('click', () => {
@@ -274,40 +289,109 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // 2. Build the Results Table Array
-        const resultsTableBody = [
-            [
-                { text: 'Energy', style: 'th' },
-                { text: 'Avg Mraw', style: 'th' },
-                { text: 'kQ', style: 'th' },
-                { text: pddOrTpr, style: 'th' },
-                { text: `Ref Output\n[${refUnit}]`, style: 'th' },
-                { text: `Dw(Zmax)\n[${refUnit}]`, style: 'th' },
-                { text: 'Var (%)', style: 'th' }
-            ]
-        ];
+        // ---- BUILD DYNAMIC k_pol TABLE ----
+        let posArr = getReadingsArray('m_pos');
+        let negArr = getReadingsArray('m_neg');
+        let polCols = Math.max(posArr.length, negArr.length, 0);
 
+        let polHeader = [{text: 'Polarity', style: 'th'}];
+        if (polCols > 1) { for(let i=1; i<=polCols; i++) polHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        polHeader.push({text: 'Avg', style: 'th'}, {text: 'k_pol', style: 'th'});
+
+        let posRow = [{text: 'Positive (+)', style: 'cell'}];
+        if (polCols > 1) posRow.push(...padArray(posArr, polCols).map(x => ({text: x, style: 'cell'})));
+        posRow.push({text: document.getElementById('m_pos_avg').textContent, style: 'label'});
+        posRow.push({text: kPol, rowSpan: 2, style: 'label', margin: [0, 8, 0, 0]}); 
+
+        let negRow = [{text: 'Negative (-)', style: 'cell'}];
+        if (polCols > 1) negRow.push(...padArray(negArr, polCols).map(x => ({text: x, style: 'cell'})));
+        negRow.push({text: document.getElementById('m_neg_avg').textContent, style: 'label'});
+        negRow.push('');
+
+        // ---- BUILD DYNAMIC k_s TABLE ----
+        let m1Arr = getReadingsArray('m1');
+        let m2Arr = getReadingsArray('m2');
+        let ksCols = Math.max(m1Arr.length, m2Arr.length, 0);
+
+        let ksHeader = [{text: 'Voltage [V]', style: 'th'}];
+        if (ksCols > 1) { for(let i=1; i<=ksCols; i++) ksHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        ksHeader.push({text: 'Avg', style: 'th'}, {text: 'Coeffs (a0, a1, a2)', style: 'th'}, {text: 'k_s', style: 'th'});
+
+        let v1 = getText('v1'), v2 = getText('v2');
+        let a0 = document.getElementById('a0_val').textContent;
+        let a1 = document.getElementById('a1_val').textContent;
+        let a2 = document.getElementById('a2_val').textContent;
+        let coeffsText = `${a0}\n${a1}\n${a2}`;
+
+        let ksRow1 = [{text: `Normal (${v1}V)`, style:'cell'}];
+        if (ksCols > 1) ksRow1.push(...padArray(m1Arr, ksCols).map(x => ({text: x, style: 'cell'})));
+        ksRow1.push({text: document.getElementById('m1_avg').textContent, style:'label'});
+        ksRow1.push({text: coeffsText, rowSpan: 2, fontSize: 10, alignment: 'center', margin: [0,5,0,0]});
+        ksRow1.push({text: kS, rowSpan: 2, style:'label', margin: [0,12,0,0]});
+
+        let ksRow2 = [{text: `Reduced (${v2}V)`, style:'cell'}];
+        if (ksCols > 1) ksRow2.push(...padArray(m2Arr, ksCols).map(x => ({text: x, style: 'cell'})));
+        ksRow2.push({text: document.getElementById('m2_avg').textContent, style:'label'});
+        ksRow2.push('');
+        ksRow2.push('');
+
+        // ---- BUILD DYNAMIC FINAL TABLE ----
+        let finalRowsData = [];
+        let maxFinalCols = 0;
+        
         document.querySelectorAll('#doseTable tbody tr').forEach(row => {
-            const energy = row.querySelector('.inp-energy').value;
-            const mode = row.querySelector('.inp-energy-mode').value;
-            const engStr = energy ? `${energy} ${mode}` : '---';
-            const mraw = row.querySelector('.mraw-avg-display').textContent;
-            const kq = row.querySelector('.inp-kq').value || '---';
-            const pdd = row.querySelector('.inp-pdd').value || '---';
-            const ref = row.querySelector('.inp-ref').value || '---';
-            const dzmax = row.querySelector('.out-dzmax').textContent;
-            const varObj = row.querySelector('.out-var');
-            const variation = varObj.textContent;
+            let mraw1 = getRowVal(row.querySelector('.inp-mraw1'));
+            let mraw2 = getRowVal(row.querySelector('.inp-mraw2'));
+            let mraw3 = getRowVal(row.querySelector('.inp-mraw3'));
+            let arr = [];
+            if(mraw1 !== null) arr.push(mraw1);
+            if(mraw2 !== null) arr.push(mraw2);
+            if(mraw3 !== null) arr.push(mraw3);
+            if(arr.length > maxFinalCols) maxFinalCols = arr.length;
+
+            finalRowsData.push({ rowEl: row, arr: arr });
+        });
+
+        let finalHeader = [{text: 'Energy', style: 'th'}];
+        if (maxFinalCols > 1) { for(let i=1; i<=maxFinalCols; i++) finalHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        finalHeader.push(
+            {text: 'Avg Mraw', style: 'th'},
+            {text: 'kQ', style: 'th'},
+            {text: pddOrTpr, style: 'th'},
+            {text: `Ref Output\n[${refUnit}]`, style: 'th'},
+            {text: `Dw(Zmax)\n[${refUnit}]`, style: 'th'},
+            {text: 'Var (%)', style: 'th'}
+        );
+
+        let resultsTableBody = [finalHeader];
+
+        finalRowsData.forEach(data => {
+            let row = data.rowEl;
+            let arr = data.arr;
+
+            let energy = row.querySelector('.inp-energy').value;
+            let mode = row.querySelector('.inp-energy-mode').value;
+            let engStr = energy ? `${energy} ${mode}` : '---';
+            let mraw_avg = row.querySelector('.mraw-avg-display').textContent;
+            let kq = row.querySelector('.inp-kq').value || '---';
+            let pdd = row.querySelector('.inp-pdd').value || '---';
+            let ref = row.querySelector('.inp-ref').value || '---';
+            let dzmax = row.querySelector('.out-dzmax').textContent;
+            let varObj = row.querySelector('.out-var');
+            let variation = varObj.textContent;
             
-            // Apply color to variation cell
             const varColor = (varObj.style.color === 'rgb(217, 83, 79)') ? '#d9534f' : 
                              (varObj.style.color === 'rgb(92, 184, 92)') ? '#5cb85c' : '#333';
 
-            resultsTableBody.push([
-                engStr, mraw, kq, pdd, ref, 
-                {text: dzmax, bold: true}, 
-                {text: variation, bold: true, color: varColor}
-            ]);
+            let pdfRow = [{text: engStr, style: 'label'}];
+            if (maxFinalCols > 1) { pdfRow.push(...padArray(arr, maxFinalCols).map(x => ({text: x, style: 'cell'}))); }
+            pdfRow.push(
+                {text: mraw_avg, style: 'label'},
+                {text: kq, style: 'cell'}, {text: pdd, style: 'cell'}, {text: ref, style: 'cell'},
+                {text: dzmax, bold: true, alignment: 'center'}, 
+                {text: variation, bold: true, color: varColor, alignment: 'center'}
+            );
+            resultsTableBody.push(pdfRow);
         });
 
         // 3. Construct Document Definition
@@ -321,7 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 sectionHeader: { fontSize: 13, bold: true, color: '#0056b3', margin: [0, 15, 0, 8] },
                 th: { bold: true, fillColor: '#eef2f5', color: '#0056b3', alignment: 'center', margin: [0,4,0,4] },
                 cell: { margin: [0,4,0,4], alignment: 'center' },
-                label: { bold: true, color: '#555' }
+                label: { bold: true, color: '#333', alignment: 'center', margin: [0,4,0,4] },
+                tableWrapper: { margin: [0, 5, 0, 15] }
             },
             content: [
                 // Header Row (Logo + Title)
@@ -335,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        { width: 80, text: '' } // Spacer to keep title centered
+                        { width: 80, text: '' } 
                     ],
                     margin: [0, 0, 0, 20]
                 },
@@ -348,12 +433,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             table: {
                                 widths: ['50%', '50%'],
                                 body: [
-                                    [{text: '1. Reference Conditions', colSpan: 2, style: 'th'}, {}],
-                                    [{text: 'Phantom', style: 'label'}, phant],
-                                    [{text: 'Setup', style: 'label'}, setup],
-                                    [{text: 'Zref [g/cm²]', style: 'label'}, zref],
-                                    [{text: 'Field Size [cm x cm]', style: 'label'}, fSize],
-                                    [{text: 'No. of MU', style: 'label'}, mu]
+                                    [{text: '1. Measurement Conditions', colSpan: 2, style: 'th'}, {}],
+                                    [{text: 'Phantom', style: 'label'}, {text: phant, style: 'cell'}],
+                                    [{text: 'Setup', style: 'label'}, {text: setup, style: 'cell'}],
+                                    [{text: 'Zref [g/cm²]', style: 'label'}, {text: zref, style: 'cell'}],
+                                    [{text: 'Field Size [cm x cm]', style: 'label'}, {text: fSize, style: 'cell'}],
+                                    [{text: 'No. of MU', style: 'label'}, {text: mu, style: 'cell'}]
                                 ]
                             }
                         },
@@ -364,10 +449,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 widths: ['50%', '50%'],
                                 body: [
                                     [{text: '2. Dosimetry Equipment', colSpan: 2, style: 'th'}, {}],
-                                    [{text: 'Chamber Model (SN)', style: 'label'}, `${getText('chamberModel')} (${getText('chamberSerial')})`],
-                                    [{text: 'N_D,w [cGy/nC]', style: 'label'}, getText('ndw')],
-                                    [{text: 'Calibration Lab', style: 'label'}, getText('calLab')],
-                                    [{text: 'Electrometer (SN)', style: 'label'}, `${getText('elecModel')} (${getText('elecSerial')})`]
+                                    [{text: 'Chamber Model (SN)', style: 'label'}, {text: `${getText('chamberModel')} (${getText('chamberSerial')})`, style: 'cell'}],
+                                    [{text: 'N_D,w [cGy/nC]', style: 'label'}, {text: getText('ndw'), style: 'cell'}],
+                                    [{text: 'Calibration Lab', style: 'label'}, {text: getText('calLab'), style: 'cell'}],
+                                    [{text: 'Electrometer (SN)', style: 'label'}, {text: `${getText('elecModel')} (${getText('elecSerial')})`, style: 'cell'}]
                                 ]
                             }
                         }
@@ -375,28 +460,57 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
 
                 { text: '3. Applied Correction Factors', style: 'sectionHeader' },
+                
+                // kTP Table
                 {
+                    style: 'tableWrapper',
                     table: {
-                        widths: ['*','*','*','*'],
+                        widths: ['*', '*', '*', '*', '*'],
+                        headerRows: 1,
                         body: [
-                            [
-                                {text: 'k_TP (Temp/Pressure)', style: 'label'}, {text: kTP}, 
-                                {text: 'k_pol (Polarity)', style: 'label'}, {text: kPol}
-                            ],
-                            [
-                                {text: 'k_s (Recombination)', style: 'label'}, {text: kS}, 
-                                {text: 'k_elec (Electrometer)', style: 'label'}, {text: kElec}
+                            [ {text: 'T0 [°C]', style: 'th'}, {text: 'P0', style: 'th'}, {text: 'T_meas [°C]', style: 'th'}, {text: 'P_meas', style: 'th'}, {text: 'k_TP', style: 'th'} ],
+                            [ 
+                                {text: getText('t0'), style: 'cell'}, 
+                                {text: `${getText('p0')} ${document.getElementById('p0_unit').value}`, style: 'cell'}, 
+                                {text: getText('t_meas'), style: 'cell'}, 
+                                {text: `${getText('p_meas')} ${document.getElementById('p_meas_unit').value}`, style: 'cell'}, 
+                                {text: kTP, style: 'label'} 
                             ]
                         ]
                     },
-                    margin: [0, 0, 0, 15]
+                    layout: 'lightHorizontalLines'
                 },
+
+                // kPol Table
+                {
+                    style: 'tableWrapper',
+                    table: {
+                        widths: Array(polHeader.length).fill('*'),
+                        headerRows: 1,
+                        body: [ polHeader, posRow, negRow ]
+                    },
+                    layout: 'lightHorizontalLines'
+                },
+
+                // kS Table
+                {
+                    style: 'tableWrapper',
+                    table: {
+                        widths: Array(ksHeader.length).fill('*'),
+                        headerRows: 1,
+                        body: [ ksHeader, ksRow1, ksRow2 ]
+                    },
+                    layout: 'lightHorizontalLines'
+                },
+
+                // kElec Note
+                { text: `Electrometer Factor (k_elec): ${kElec}`, margin: [0, 0, 0, 15], bold: true, fontSize: 11, alignment: 'right' },
 
                 { text: '4. Absorbed Dose to Water Results', style: 'sectionHeader' },
                 {
                     table: {
                         headerRows: 1,
-                        widths: ['*', 'auto', '*', '*', '*', '*', '*'],
+                        widths: Array(finalHeader.length).fill('auto'), // 'auto' allows tight wrapping
                         body: resultsTableBody
                     },
                     layout: 'lightHorizontalLines'
@@ -408,19 +522,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         {
                             text: `Performed by:\n\n\n___________________________\n${getText('userName')}`,
                             alignment: 'left',
-                            margin: [0, 60, 0, 0]
+                            margin: [0, 50, 0, 0]
                         },
                         {
                             text: `Incharge Medical Physicist/RSO:\n\n\n___________________________\n`,
                             alignment: 'right',
-                            margin: [0, 60, 0, 0]
+                            margin: [0, 50, 0, 0]
                         }
                     ]
                 }
             ]
         };
 
-        // Create and Download PDF
         let filename = `${therapyUnit.replace(/[^a-z0-9]/gi, '_') || 'Unit'}_${document.getElementById('date').value || 'Date'}.pdf`;
         pdfMake.createPdf(docDefinition).download(filename);
     });
