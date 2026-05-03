@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateSetupLabels() {
         if (setupSelect.value === 'SSD') {
-            thPdd.innerHTML = 'PDD (%)';
+            thPdd.innerHTML = 'PDD (%) <span class="required">*</span>';
         } else {
-            thPdd.innerHTML = 'TPR';
+            thPdd.innerHTML = 'TPR <span class="required">*</span>';
         }
         calculateAllDoses();
     }
@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('th-dzmax-unit').textContent = `[${unit}]`;
         calculateAllDoses();
     });
+
+    // Tolerance Selection triggers recalculation (to update colors)
+    document.getElementById('toleranceSelect').addEventListener('change', calculateAllDoses);
 
     // Helper: Safely parse floats
     function getVal(id) {
@@ -168,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ndw = getVal('ndw');
         const numMu = getVal('num_mu');
         const refDoseUnit = document.getElementById('refDoseUnit').value;
+        const tolerance = parseFloat(document.getElementById('toleranceSelect').value); // 2 or 3
 
         // --- Calculate for each row in the Table ---
         const globalFactor = (kTP !== null && kPol !== null && kS !== null) ? (kTP * kElec * kPol * kS) : null;
@@ -179,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const mraw3 = getRowVal(row.querySelector('.inp-mraw3'));
             const kq = getRowVal(row.querySelector('.inp-kq'));
             const pddTpr = getRowVal(row.querySelector('.inp-pdd'));
-            const refDose = getRowVal(row.querySelector('.inp-ref'));
+            const refOutput = getRowVal(row.querySelector('.inp-ref'));
 
             // Row Mraw Avg
             let sum = 0, count = 0;
@@ -213,7 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         dw_zmax = dw_zref / pddTpr;
                     }
 
-                    // Handle display units based on Reference Dose Unit selection strictly as requested
                     if (refDoseUnit === 'cGy/MU') {
                         comparison_val = dw_zmax;
                         row.querySelector('.out-dzmax').textContent = dw_zmax.toFixed(4);
@@ -228,12 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.querySelector('.out-dzmax').textContent = "---";
             }
 
-            // Variation
-            if (comparison_val !== null && refDose !== null && refDose !== 0) {
-                const variation = ((comparison_val - refDose) / refDose) * 100;
+            // Variation & Tolerance Check
+            if (comparison_val !== null && refOutput !== null && refOutput !== 0) {
+                const variation = ((comparison_val - refOutput) / refOutput) * 100;
                 const varEl = row.querySelector('.out-var');
                 varEl.textContent = variation.toFixed(2);
-                varEl.style.color = Math.abs(variation) > 2.0 ? '#d9534f' : '#5cb85c';
+                // Apply color based on the selected tolerance dropdown
+                varEl.style.color = Math.abs(variation) > tolerance ? '#d9534f' : '#5cb85c';
             } else {
                 row.querySelector('.out-var').textContent = "---";
                 row.querySelector('.out-var').style.color = "inherit";
@@ -245,9 +249,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function addEnergyRow() {
         const tbody = document.querySelector('#doseTable tbody');
         const tr = document.createElement('tr');
-        // We only render outputs for Dzmax and Variation now.
+        
         tr.innerHTML = `
-            <td><input type="number" step="1" class="row-input inp-energy"></td>
+            <td>
+                <div class="input-with-unit" style="justify-content:center;">
+                    <input type="number" step="1" class="row-input inp-energy">
+                    <select class="row-input inp-energy-mode">
+                        <option value="MV">MV</option>
+                        <option value="FFF">FFF</option>
+                    </select>
+                </div>
+            </td>
             <td>
                 <div class="mraw-inputs">
                     <input type="number" step="0.01" class="row-input inp-mraw1">
@@ -264,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="no-print"><button class="remove-btn">X</button></td>
         `;
         
-        // Add listeners to new inputs
         tr.querySelectorAll('.row-input').forEach(inp => inp.addEventListener('input', calculateAllDoses));
         tr.querySelector('.remove-btn').addEventListener('click', () => {
             tr.remove();
@@ -293,8 +304,13 @@ document.addEventListener('DOMContentLoaded', () => {
             filename:     customFilename,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } // Landscape for table width
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' } 
         };
+
+        // Open all details sections to ensure they render on the PDF
+        document.querySelectorAll('details').forEach(detail => {
+            detail.setAttribute('open', 'true');
+        });
 
         document.body.classList.add('pdf-mode');
 
