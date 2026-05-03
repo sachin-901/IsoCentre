@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRS 398 Worksheet: High Energy Photon Beams</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- PDFMake Libraries for high-quality PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 </head>
 <body>
     <div id="worksheet" class="container">
@@ -15,6 +18,7 @@
         </header>
 
         <section class="info-grid">
+            <div class="form-group"><label>Institute Logo (For PDF):</label><input type="file" id="logoInput" accept="image/*"></div>
             <div class="form-group"><label>User:</label><input type="text" id="userName"></div>
             <div class="form-group"><label>Date:</label><input type="date" id="date"></div>
             <div class="form-group"><label>Therapy Unit:</label><input type="text" id="therapyUnit"></div>
@@ -62,7 +66,6 @@
             </div>
         </details>
 
-        <!-- Collapsed by default -->
         <details class="worksheet-section">
             <summary><h2>3. Influence Quantities & Corrections</h2></summary>
             <div class="section-content">
@@ -196,7 +199,7 @@
                                 <th>Ref Output <span class="required">*</span><br><span id="th-ref-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
                                 <th>D<sub>w</sub>(z<sub>max</sub>)<br><span id="th-dzmax-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
                                 <th>Var<br>(%)</th>
-                                <th class="no-print">Act</th>
+                                <th>Act</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -205,7 +208,7 @@
                     </table>
                 </div>
                 
-                <div class="no-print" style="margin-top: 10px;">
+                <div style="margin-top: 10px;">
                     <button id="addRowBtn" class="btn" style="background-color: #28a745; font-size: 14px; padding: 8px 16px;">+ Add Energy Row</button>
                 </div>
                 
@@ -218,9 +221,9 @@
             </div>
         </details>
 
-        <!-- Download Button at the bottom -->
+        <!-- Download Button -->
         <div class="toolbar bottom-toolbar">
-            <button id="downloadPdfBtn" class="btn">Download as PDF</button>
+            <button id="generatePdfBtn" class="btn">Generate Custom PDF Report</button>
         </div>
     </div>
 
