@@ -1,4 +1,62 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const firebaseConfig = {
+  apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
+  authDomain: "trs-398-output-measurement.firebaseapp.com",
+  projectId: "trs-398-output-measurement",
+  storageBucket: "trs-398-output-measurement.firebasestorage.app",
+  messagingSenderId: "942327539222",
+  appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
+};
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // --- 2. UI ELEMENTS ---
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginError = document.getElementById('loginError');
+
+    // --- 3. AUTH STATE OBSERVER ---
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // User is securely logged in
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+            document.getElementById('navUserName').textContent = user.email; 
+            console.log("Secure User ID:", user.uid);
+        } else {
+            // User is logged out
+            appContainer.style.display = 'none';
+            loginContainer.style.display = 'block';
+        }
+    });
+
+    // --- 4. LOGIN BUTTON LOGIC ---
+    loginBtn.addEventListener('click', () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPassword').value;
+        
+        loginError.style.display = 'none'; 
+        loginBtn.textContent = "Logging in...";
+        
+        auth.signInWithEmailAndPassword(email, pass)
+            .then(() => {
+                loginBtn.textContent = "Log In";
+            })
+            .catch((error) => {
+                loginError.textContent = "Error: " + error.message;
+                loginError.style.display = 'block';
+                loginBtn.textContent = "Log In";
+            });
+    });
+
+    // --- 5. LOGOUT BUTTON LOGIC ---
+    logoutBtn.addEventListener('click', () => {
+        auth.signOut();
+    });
     
     // --- 0. Logo Upload Handling for PDF ---
     let logoBase64 = null;
