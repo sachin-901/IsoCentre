@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRS 398 Worksheet: High Energy Photon Beams</title>
+    <!-- FIREBASE LIBRARIES -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <link rel="stylesheet" href="style.css">
     
     <!-- PDFMake Libraries for high-quality PDF generation -->
@@ -11,6 +15,41 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 </head>
 <body>
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-container" class="container" style="max-width: 400px; margin-top: 100px; text-align: center;">
+        <h2 style="color: #0056b3;">TRS-398 QA Portal</h2>
+        <p>Please log in to access your clinic's database.</p>
+    
+        <div style="text-align: left; margin-top: 20px;">
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="loginEmail" placeholder="physicist@hospital.org">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Password:</label>
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <button id="loginBtn" class="btn" style="width: 100%; margin-top: 20px;">Log In</button>
+            <p id="loginError" style="color: #d9534f; font-size: 13px; margin-top: 10px; display: none;"></p>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP SCREEN (Hidden by default) -->
+    <div id="app-container" style="display: none;">
+        <!-- App Navbar -->
+        <div class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="font-size: 18px; font-weight: bold;">TRS-398 Portal</div>
+            <div style="font-size: 14px;">
+                <span id="navUserName" style="margin-right: 15px;">User</span>
+                <button id="logoutBtn" class="btn" style="background: transparent; border: 1px solid white; padding: 5px 10px;">Log Out</button>
+            </div>
+        </div>
+
+        <!-- YOUR EXISTING CALCULATOR DIV GOES HERE -->
+        <div id="worksheet" class="container">
+           <!-- ... -->
+        </div>
+    </div>
     <div id="worksheet" class="container">
         <header>
             <h1>Absorbed Dose to Water: High Energy Photon Beams</h1>
