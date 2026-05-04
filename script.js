@@ -1,40 +1,45 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ==========================================
+    // 1. FIREBASE AUTHENTICATION & SETUP
+    // ==========================================
+
+    // IMPORTANT: Replace this block with your actual keys from the Firebase Console!
     const firebaseConfig = {
-  apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
-  authDomain: "trs-398-output-measurement.firebaseapp.com",
-  projectId: "trs-398-output-measurement",
-  storageBucket: "trs-398-output-measurement.firebasestorage.app",
-  messagingSenderId: "942327539222",
-  appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
-};
+      apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
+      authDomain: "trs-398-output-measurement.firebaseapp.com",
+      projectId: "trs-398-output-measurement",
+      storageBucket: "trs-398-output-measurement.firebasestorage.app",
+      messagingSenderId: "942327539222",
+      appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
+    };
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // --- 2. UI ELEMENTS ---
+    // DOM Elements for Login
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const loginError = document.getElementById('loginError');
 
-    // --- 3. AUTH STATE OBSERVER ---
+    // Auth State Observer
     auth.onAuthStateChanged((user) => {
         if (user) {
-            // User is securely logged in
+            // Logged in securely
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
-            document.getElementById('navUserName').textContent = user.email; 
-            console.log("Secure User ID:", user.uid);
+            document.getElementById('navUserName').textContent = user.email;
         } else {
-            // User is logged out
+            // Logged out
             appContainer.style.display = 'none';
             loginContainer.style.display = 'block';
         }
     });
 
-    // --- 4. LOGIN BUTTON LOGIC ---
+    // Login Logic
     loginBtn.addEventListener('click', () => {
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPassword').value;
@@ -53,12 +58,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    // --- 5. LOGOUT BUTTON LOGIC ---
+    // Logout Logic
     logoutBtn.addEventListener('click', () => {
         auth.signOut();
     });
-    
-    // --- 0. Logo Upload Handling for PDF ---
+
+
+    // ==========================================
+    // 2. CALCULATOR LOGIC & PDF GENERATION
+    // ==========================================
+
+    // --- Logo Upload Handling ---
     let logoBase64 = null;
     document.getElementById('logoInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -67,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(file) reader.readAsDataURL(file);
     });
 
-    // --- 1. Setup Logic (Toggle PDD vs TPR labels) ---
+    // --- Setup Logic (PDD vs TPR labels) ---
     const setupSelect = document.getElementById('setup');
     const thPdd = document.getElementById('th-pdd');
 
@@ -87,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         phantomOther.style.display = phantomSelect.value === 'Other' ? 'block' : 'none';
     });
 
-    // --- 2. Bi-Directional Sync: Routine M <--> M1 ---
+    // --- Bi-Directional Sync: Routine M <--> M1 ---
     const mPosInputs = [document.getElementById('m_pos_1'), document.getElementById('m_pos_2'), document.getElementById('m_pos_3')];
     const mNegInputs = [document.getElementById('m_neg_1'), document.getElementById('m_neg_2'), document.getElementById('m_neg_3')];
     const m1Inputs = [document.getElementById('m1_1'), document.getElementById('m1_2'), document.getElementById('m1_3')];
@@ -125,7 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('th-dzmax-unit').textContent = `[${unit}]`;
         calculateAllDoses();
     });
-
     document.getElementById('toleranceSelect').addEventListener('change', calculateAllDoses);
 
     // Helpers
@@ -145,7 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return avg;
     }
 
-    // Array compaction for dynamic PDF columns
     function getReadingsArray(baseId) {
         let arr = [];
         let v1 = getVal(baseId + '_1'), v2 = getVal(baseId + '_2'), v3 = getVal(baseId + '_3');
@@ -155,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return arr;
     }
 
-    // --- Main Calculation ---
+    // --- Main Calculation Engine ---
     function calculateAllDoses() {
         let t0 = getVal('t0'), p0 = getVal('p0'), p0_unit = document.getElementById('p0_unit').value;
         let t_meas = getVal('t_meas'), p_meas = getVal('p_meas'), p_meas_unit = document.getElementById('p_meas_unit').value;
@@ -208,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('a0_val').textContent = "N/A";
                 document.getElementById('a1_val').textContent = "N/A";
                 document.getElementById('a2_val').textContent = "N/A";
-                document.getElementById('kS_result').textContent = "Out of Bounds";
+                document.getElementById('kS_result').textContent = "Out of Bounds (Use V1/V2 = 2 to 5)";
                 kS = null; 
             }
         } else {
@@ -281,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dynamic Row Addition
+    // --- Dynamic Row Addition ---
     function addEnergyRow() {
         const tbody = document.querySelector('#doseTable tbody');
         const tr = document.createElement('tr');
@@ -318,12 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
-    addEnergyRow();
+    addEnergyRow(); // Add first row automatically
 
     // --- PDFMAKE Custom PDF Generation ---
     document.getElementById('generatePdfBtn').addEventListener('click', () => {
         
-        // 1. Gather Data
         const therapyUnit = getText('therapyUnit');
         let phant = document.getElementById('phantomSelect').value;
         if(phant === 'Other') phant = getText('phantomOther');
@@ -332,10 +339,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const fSize = getText('fieldSize');
         const mu = getText('num_mu');
 
+        const kTP = document.getElementById('kTP_result').textContent;
+        const kPol = document.getElementById('kPol_result').textContent;
+        const kS = document.getElementById('kS_result').textContent;
+        const kElec = getText('kelec');
+
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // ---- BUILD DYNAMIC k_TP TABLE ----
         let ktpTable = {
             widths: ['auto', 'auto'],
             body: [
@@ -344,35 +355,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 [{text: `P0 [${document.getElementById('p0_unit').value}]`, style: 'label'}, {text: getText('p0'), style: 'cell'}],
                 [{text: 'Measured T [°C]', style: 'label'}, {text: getText('t_meas'), style: 'cell'}],
                 [{text: `Measured P [${document.getElementById('p_meas_unit').value}]`, style: 'label'}, {text: getText('p_meas'), style: 'cell'}],
-                [{text: 'k_TP', style: 'label'}, {text: document.getElementById('kTP_result').textContent, style: 'cell', bold: true}]
+                [{text: 'k_TP', style: 'label'}, {text: kTP, style: 'cell', bold: true}]
             ]
         };
 
-        // ---- BUILD DYNAMIC k_pol TABLE ----
         let posArr = getReadingsArray('m_pos');
         let negArr = getReadingsArray('m_neg');
         let polCols = Math.max(posArr.length, negArr.length, 0);
-
         let polHeader = [{text: 'Polarity', style: 'th'}];
-        if (polCols > 0) { for(let i=1; i<=polCols; i++) polHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        for(let i=1; i<=polCols; i++) { polHeader.push({text: `Rdg ${i}`, style: 'th'}); }
         polHeader.push({text: 'Avg', style: 'th'});
 
         let posRow = [{text: 'Positive (+)', style: 'label'}];
-        if (polCols > 0) {
-            for(let i=0; i<polCols; i++) { posRow.push({text: posArr[i] || '---', style: 'cell'}); }
-        }
+        for(let i=0; i<polCols; i++) { posRow.push({text: posArr[i] !== undefined ? posArr[i] : '---', style: 'cell'}); }
         posRow.push({text: document.getElementById('m_pos_avg').textContent, style: 'cell'});
 
         let negRow = [{text: 'Negative (-)', style: 'label'}];
-        if (polCols > 0) {
-            for(let i=0; i<polCols; i++) { negRow.push({text: negArr[i] || '---', style: 'cell'}); }
-        }
+        for(let i=0; i<polCols; i++) { negRow.push({text: negArr[i] !== undefined ? negArr[i] : '---', style: 'cell'}); }
         negRow.push({text: document.getElementById('m_neg_avg').textContent, style: 'cell'});
 
         let kPolResultRow = [
-            {text: 'k_pol =', colSpan: polCols > 0 ? polCols + 1 : 1, style: 'label', alignment: 'right'}, 
-            ...Array(polCols > 0 ? polCols : 0).fill(''), 
-            {text: document.getElementById('kPol_result').textContent, style: 'cell', bold: true}
+            {text: 'k_pol =', colSpan: polCols + 1, style: 'label', alignment: 'right'}, 
+            ...Array(polCols).fill(''), 
+            {text: kPol, style: 'cell', bold: true}
         ];
 
         let polTable = {
@@ -380,31 +385,25 @@ document.addEventListener('DOMContentLoaded', () => {
             body: [ polHeader, posRow, negRow, kPolResultRow ]
         };
 
-        // ---- BUILD DYNAMIC k_s TABLE ----
         let m1Arr = getReadingsArray('m1');
         let m2Arr = getReadingsArray('m2');
         let ksCols = Math.max(m1Arr.length, m2Arr.length, 0);
-
         let ksHeader = [{text: 'Voltage [V]', style: 'th'}];
-        if (ksCols > 0) { for(let i=1; i<=ksCols; i++) ksHeader.push({text: `Rdg ${i}`, style: 'th'}); }
+        for(let i=1; i<=ksCols; i++) { ksHeader.push({text: `Rdg ${i}`, style: 'th'}); }
         ksHeader.push({text: 'Avg', style: 'th'});
 
         let ksRow1 = [{text: `Normal (${getText('v1')}V)`, style:'label'}];
-        if (ksCols > 0) {
-            for(let i=0; i<ksCols; i++) ksRow1.push({text: m1Arr[i] || '---', style: 'cell'});
-        }
+        for(let i=0; i<ksCols; i++) { ksRow1.push({text: m1Arr[i] !== undefined ? m1Arr[i] : '---', style: 'cell'}); }
         ksRow1.push({text: document.getElementById('m1_avg').textContent, style:'cell'});
 
         let ksRow2 = [{text: `Reduced (${getText('v2')}V)`, style:'label'}];
-        if (ksCols > 0) {
-            for(let i=0; i<ksCols; i++) ksRow2.push({text: m2Arr[i] || '---', style: 'cell'});
-        }
+        for(let i=0; i<ksCols; i++) { ksRow2.push({text: m2Arr[i] !== undefined ? m2Arr[i] : '---', style: 'cell'}); }
         ksRow2.push({text: document.getElementById('m2_avg').textContent, style:'cell'});
 
         let ksResultRow = [
-            {text: 'k_s =', colSpan: ksCols > 0 ? ksCols + 1 : 1, style: 'label', alignment: 'right'}, 
-            ...Array(ksCols > 0 ? ksCols : 0).fill(''), 
-            {text: document.getElementById('kS_result').textContent, style: 'cell', bold: true}
+            {text: 'k_s =', colSpan: ksCols + 1, style: 'label', alignment: 'right'}, 
+            ...Array(ksCols).fill(''), 
+            {text: kS, style: 'cell', bold: true}
         ];
 
         let ksTable = {
@@ -412,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
             body: [ ksHeader, ksRow1, ksRow2, ksResultRow ]
         };
 
-        // Coeffs small table
         let coeffsTable = {
             widths: ['auto', 'auto', 'auto'],
             body: [
@@ -423,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         };
 
-        // ---- BUILD DYNAMIC FINAL TABLE ----
         let finalRowsData = [];
         let maxFinalCols = 0;
         
@@ -441,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let finalHeader = [{text: 'Energy', style: 'th'}];
-        if (maxFinalCols > 0) { for(let i=1; i<=maxFinalCols; i++) finalHeader.push({text: `M_raw ${i}`, style: 'th'}); }
+        for(let i=1; i<=maxFinalCols; i++) { finalHeader.push({text: `M_raw ${i}`, style: 'th'}); }
         finalHeader.push(
             {text: 'Avg\nM_raw', style: 'th'},
             {text: 'kQ', style: 'th'},
@@ -472,9 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
                              (varObj.style.color === 'rgb(92, 184, 92)') ? '#5cb85c' : '#333';
 
             let pdfRow = [{text: engStr, style: 'label'}];
-            if (maxFinalCols > 0) {
-                for(let i=0; i<maxFinalCols; i++) { pdfRow.push({text: arr[i] || '---', style: 'cell'}); }
-            }
+            for(let i=0; i<maxFinalCols; i++) { pdfRow.push({text: arr[i] !== undefined ? arr[i] : '---', style: 'cell'}); }
             pdfRow.push(
                 {text: mraw_avg, style: 'label'},
                 {text: kq, style: 'cell'}, {text: pdd, style: 'cell'}, {text: ref, style: 'cell'},
@@ -484,7 +479,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsTableBody.push(pdfRow);
         });
 
-        // 3. Construct Document Definition
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
@@ -499,7 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableWrapper: { margin: [0, 5, 0, 15] }
             },
             content: [
-                // Header Row (Logo + Title)
                 {
                     columns: [
                         logoBase64 ? { image: logoBase64, width: 80 } : { text: '', width: 80 },
@@ -514,8 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     ],
                     margin: [0, 0, 0, 20]
                 },
-                
-                // Section 1 & 2: Info Tables
                 {
                     pageBreak: 'avoid',
                     columns: [
@@ -549,26 +540,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     ]
                 },
-
                 { text: '3. Applied Correction Factors', style: 'sectionHeader', pageBreak: 'avoid' },
-                
                 {
                     columns: [
-                        // Column 1: kTP Table
-                        {
-                            width: 'auto',
-                            margin: [0,0,15,0],
-                            pageBreak: 'avoid',
-                            table: ktpTable
-                        },
-                        // Column 2: kPol Table
-                        {
-                            width: 'auto',
-                            margin: [0,0,15,0],
-                            pageBreak: 'avoid',
-                            table: polTable
-                        },
-                        // Column 3: kElec Table
+                        { width: 'auto', margin: [0,0,15,0], pageBreak: 'avoid', table: ktpTable },
+                        { width: 'auto', margin: [0,0,15,0], pageBreak: 'avoid', table: polTable },
                         {
                             width: 'auto',
                             pageBreak: 'avoid',
@@ -582,29 +558,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     ]
                 },
-
-                // kS Table and Coeffs below it
                 {
                     pageBreak: 'avoid',
                     margin: [0, 15, 0, 0],
-                    columns: [
-                        {
-                            width: 'auto',
-                            table: ksTable
-                        }
-                    ]
+                    columns: [ { width: 'auto', table: ksTable } ]
                 },
                 {
                     pageBreak: 'avoid',
                     margin: [0, 5, 0, 15],
-                    columns: [
-                        {
-                            width: 'auto',
-                            table: coeffsTable
-                        }
-                    ]
+                    columns: [ { width: 'auto', table: coeffsTable } ]
                 },
-
                 { text: '4. Absorbed Dose to Water Results', style: 'sectionHeader', pageBreak: 'avoid' },
                 {
                     pageBreak: 'avoid',
@@ -614,8 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: resultsTableBody
                     }
                 },
-
-                // Signatures
                 {
                     pageBreak: 'avoid',
                     columns: [
