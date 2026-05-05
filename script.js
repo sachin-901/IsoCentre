@@ -643,3 +643,175 @@ document.addEventListener('DOMContentLoaded', () => {
         pdfMake.createPdf(docDefinition).download(filename);
     });
 });
+// ==========================================
+    // 4. COMMISSIONING & ADMIN DASHBOARD LOGIC
+    // ==========================================
+
+    const worksheetContainer = document.getElementById('worksheet');
+    const adminContainer = document.getElementById('admin-container');
+    const toggleAdminBtn = document.getElementById('toggleAdminBtn');
+    const backToQaBtn = document.getElementById('backToQaBtn');
+
+    // Toggle Views
+    toggleAdminBtn.addEventListener('click', () => {
+        worksheetContainer.style.display = 'none';
+        adminContainer.style.display = 'block';
+        loadMachinesForDropdown(); // Fetch latest machines from DB
+    });
+
+    backToQaBtn.addEventListener('click', () => {
+        adminContainer.style.display = 'none';
+        worksheetContainer.style.display = 'block';
+    });
+
+    // --- MACHINE COMMISSIONING ---
+    document.getElementById('adminAddEnergyBtn').addEventListener('click', () => {
+        const tbody = document.querySelector('#adminEnergyTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="admin-energy-name"></td>
+            <td><input type="number" step="0.001" class="admin-tpr"></td>
+            <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
+        `;
+        tr.querySelector('.admin-remove-btn').addEventListener('click', () => tr.remove());
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('saveMachineBtn').addEventListener('click', async () => {
+        const name = document.getElementById('adminMachineName').value;
+        if (!name) return alert("Please enter a Machine Name.");
+
+        const energies = [];
+        document.querySelectorAll('#adminEnergyTable tbody tr').forEach(row => {
+            const eName = row.querySelector('.admin-energy-name').value;
+            const tpr = parseFloat(row.querySelector('.admin-tpr').value);
+            if (eName && !isNaN(tpr)) {
+                energies.push({ energy: eName, tpr2010: tpr, baselineSet: false });
+            }
+        });
+
+        if (energies.length === 0) return alert("Please add at least one valid energy.");
+
+        try {
+            await db.collection('machines').add({
+                name: name,
+                energies: energies,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("Machine successfully commissioned to database!");
+            document.getElementById('adminMachineName').value = '';
+            loadMachinesForDropdown();
+        } catch (error) {
+            console.error("Error adding machine: ", error);
+            alert("Error saving machine. Check console.");
+        }
+    });
+
+
+    // --- CHAMBER COMMISSIONING & TRS-398 INTERPOLATION ---
+    
+    // Mini TRS-398 Lookup Table (Extend this later!)
+    const trs398Data = {
+        "PTW 30013": [
+            { tpr: 0.50, kq: 1.000 }, { tpr: 0.53, kq: 0.999 },
+            { tpr: 0.56, kq: 0.997 }, { tpr: 0.59, kq: 0.995 },
+            { tpr: 0.62, kq: 0.992 }, { tpr: 0.65, kq: 0.989 },
+            { tpr: 0.68, kq: 0.985 }, { tpr: 0.71, kq: 0.980 },
+            { tpr: 0.74, kq: 0.974 }, { tpr: 0.77, kq: 0.967 },
+            { tpr: 0.80, kq: 0.959 }
+        ]
+    };
+
+    function interpolateKq(model, tprTarget) {
+        // If we don't have the table for this model, return 1.000 (Manual entry required later)
+        if (!trs398Data[model]) return 1.000; 
+        
+        const data = trs398Data[model];
+        // Simple linear interpolation
+        for (let i = 0; i < data.length - 1; i++) {
+            if (tprTarget >= data[i].tpr && tprTarget <= data[i+1].tpr) {
+                const slope = (data[i+1].kq - data[i].kq) / (data[i+1].tpr - data[i].tpr);
+                const kq = data[i].kq + slope * (tprTarget - data[i].tpr);
+                return parseFloat(kq.toFixed(3));
+            }
+        }
+        return 1.000; // Out of bounds
+    }
+
+    // Load Machines into Chamber Dropdown
+    let currentMachines = [];
+    async function loadMachinesForDropdown() {
+        const select = document.getElementById('adminTargetMachine');
+        select.innerHTML = '<option value="">-- Select Machine --</option>';
+        currentMachines = [];
+
+        const snapshot = await db.collection('machines').get();
+        snapshot.forEach(doc => {
+            const machine = { id: doc.id, ...doc.data() };
+            currentMachines.push(machine);
+            const option = document.createElement('option');
+            option.value = machine.id;
+            option.textContent = machine.name;
+            select.appendChild(option);
+        });
+    }
+
+    // When a machine is selected, calculate kQ for its energies
+    let calculatedKqFactors = {};
+    document.getElementById('adminTargetMachine').addEventListener('change', (e) => {
+        const machineId = e.target.value;
+        const model = document.getElementById('adminChamberModel').value || "PTW 30013"; 
+        const kqSection = document.getElementById('chamberKqSection');
+        const resultsDiv = document.getElementById('chamberKqResults');
+        
+        calculatedKqFactors = {};
+        resultsDiv.innerHTML = '';
+
+        if (!machineId) {
+            kqSection.style.display = 'none';
+            return;
+        }
+
+        const machine = currentMachines.find(m => m.id === machineId);
+        machine.energies.forEach(eng => {
+            const kq = interpolateKq(model, eng.tpr2010);
+            calculatedKqFactors[eng.energy] = kq;
+            
+            resultsDiv.innerHTML += `
+                <div style="background: white; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <strong>${eng.energy}</strong><br>
+                    TPR: ${eng.tpr2010} &rarr; <strong>k<sub>Q</sub>: ${kq}</strong>
+                </div>
+            `;
+        });
+        kqSection.style.display = 'block';
+    });
+
+    document.getElementById('saveChamberBtn').addEventListener('click', async () => {
+        const model = document.getElementById('adminChamberModel').value;
+        const serial = document.getElementById('adminChamberSerial').value;
+        const ndw = parseFloat(document.getElementById('adminChamberNdw').value);
+        const machineId = document.getElementById('adminTargetMachine').value;
+
+        if (!model || !serial || isNaN(ndw) || !machineId) {
+            return alert("Please fill out all chamber details and select a machine.");
+        }
+
+        try {
+            await db.collection('chambers').add({
+                model: model,
+                serial: serial,
+                ndw: ndw,
+                targetMachineId: machineId,
+                kqFactors: calculatedKqFactors, // Saves the interpolated kQ dictionary!
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("Chamber successfully commissioned and mapped to machine!");
+            document.getElementById('adminChamberModel').value = '';
+            document.getElementById('adminChamberSerial').value = '';
+            document.getElementById('adminChamberNdw').value = '';
+            document.getElementById('chamberKqSection').style.display = 'none';
+        } catch (error) {
+            console.error("Error adding chamber: ", error);
+        }
+    });
