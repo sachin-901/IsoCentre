@@ -5,12 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     // IMPORTANT: Replace this block with your actual keys from the Firebase Console!
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "firebase/app";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-
-    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
       authDomain: "trs-398-output-measurement.firebaseapp.com",
@@ -48,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Login Logic
     loginBtn.addEventListener('click', () => {
-        alert("The button works!");
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPassword').value;
         
