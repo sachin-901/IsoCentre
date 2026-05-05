@@ -352,16 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // --- Custom SVG Logos for PDF ---
-        const darkIsoLogo = `
-            <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="15" cy="15" r="10" fill="none" stroke="#0056b3" stroke-width="2.5" opacity="0.6"/>
-                <line x1="15" y1="2" x2="15" y2="28" stroke="#0056b3" stroke-width="2" stroke-dasharray="2 2" opacity="0.9"/>
-                <line x1="2" y1="15" x2="28" y2="15" stroke="#0056b3" stroke-width="2" stroke-dasharray="2 2" opacity="0.9"/>
-                <circle cx="15" cy="15" r="4.5" fill="#0056b3" />
-                <text x="35" y="21" font-family="Arial, sans-serif" font-size="20" fill="#0056b3" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#2b6cb0">Centre</tspan></text>
-            </svg>`;
-
+        // --- White SVG Logo for Footer ---
         const whiteIsoLogo = `
             <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
@@ -508,23 +499,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 50], 
+            pageMargins: [40, 40, 40, 45], 
             
-            // --- Custom Blue Footer Bar (Full Width, Distributed) ---
+            // --- Custom Blue Footer Bar ---
             footer: function(currentPage, pageCount) {
                 return {
-                    margin: [-40, 10, -40, 0], // Negative margins push it to the physical edge
+                    margin: [-40, 15, -40, 0], // Pushes the blue background perfectly to the paper edges
                     table: {
-                        widths: ['*', '*', '*'],
+                        widths: ['*'],
                         body: [
                             [
-                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'left', margin: [40, 4, 0, 4] },
-                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'center', margin: [0, 4, 0, 4] },
-                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'right', margin: [0, 4, 40, 4] }
+                                {
+                                    fillColor: '#0056b3',
+                                    // Internal layout of the blue bar with precise left/center/right SVG placement
+                                    columns: [
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'left', margin: [60, 2, 0, 2] },   // 60px padding from the left edge
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'center', margin: [0, 2, 0, 2] },
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'right', margin: [0, 2, 60, 2] }   // 60px padding from the right edge
+                                    ],
+                                    border: [false, false, false, false]
+                                }
                             ]
                         ]
                     },
-                    layout: 'noBorders'
+                    // This layout property ensures the table has absolutely ZERO default padding, keeping the bar thin
+                    layout: {
+                        defaultBorder: false,
+                        paddingLeft: function() { return 0; },
+                        paddingRight: function() { return 0; },
+                        paddingTop: function() { return 0; },
+                        paddingBottom: function() { return 0; }
+                    }
                 };
             },
 
@@ -538,10 +543,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableWrapper: { margin: [0, 5, 0, 15] }
             },
             content: [
-                // --- Header with Logos ---
+                // --- Header (Dark Logo Removed) ---
                 {
                     columns: [
+                        // Left: Hospital Logo
                         logoBase64 ? { image: logoBase64, width: 80, alignment: 'left' } : { text: '', width: 80 },
+                        // Center: Title Text
                         {
                             width: '*',
                             text: [
@@ -549,7 +556,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        { svg: darkIsoLogo, width: 110, alignment: 'right', margin: [0, 4, 0, 0] }
+                        // Right: Empty spacer block to keep the center title perfectly balanced
+                        { width: 80, text: '' } 
                     ],
                     margin: [0, 0, 0, 20]
                 },
