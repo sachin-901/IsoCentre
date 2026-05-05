@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRS 398 Worksheet: High Energy Photon Beams</title>
+    <title>IsoCentre - QA Portal</title>
     <link rel="stylesheet" href="style.css">
     
     <!-- PDFMake Libraries for high-quality PDF generation -->
@@ -17,12 +17,28 @@
 </head>
 <body>
 
-    <!-- 1. LOGIN SCREEN (Visible by default) -->
-    <div id="login-container" class="container" style="max-width: 400px; margin-top: 100px; text-align: center;">
-        <h2 style="color: #0056b3;">TRS-398 QA Portal</h2>
-        <p>Please log in to access your clinic's database.</p>
+    <!-- 1. LOGIN SCREEN -->
+    <!-- Notice overflow: hidden to keep the banner edges rounded inside the container -->
+    <div id="login-container" class="container" style="max-width: 400px; margin-top: 100px; overflow: hidden; padding-top: 0;">
         
-        <div style="text-align: left; margin-top: 20px;">
+        <!-- Upgraded Login Header Banner -->
+        <div style="background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); padding: 30px 20px; margin: 0 -40px 20px -40px; text-align: center;">
+            <svg width="200" height="50" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="25" cy="25" r="16" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+                <line x1="25" y1="4" x2="25" y2="46" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 3" opacity="0.6"/>
+                <line x1="4" y1="25" x2="46" y2="25" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 3" opacity="0.6"/>
+                <circle cx="25" cy="25" r="6" fill="#00d2ff" />
+                <text x="55" y="33" font-family="Arial, sans-serif" font-size="28" fill="#ffffff" font-weight="bold" letter-spacing="1">
+                    Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan>
+                </text>
+            </svg>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 25px;">
+            <p style="color: #555; font-weight: bold; margin: 0;">Secure Clinical QA Portal</p>
+        </div>
+        
+        <div style="text-align: left;">
             <div class="form-group">
                 <label>Email:</label>
                 <input type="email" id="loginEmail" placeholder="physicist@hospital.org" style="width: 100%; margin-bottom: 15px;">
@@ -41,7 +57,20 @@
         
         <!-- App Navbar -->
         <div class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div style="font-size: 18px; font-weight: bold;">TRS-398 Portal</div>
+            
+            <!-- IsoCentre Navbar SVG Logo -->
+            <div style="display: flex; align-items: center; cursor: pointer;">
+                <svg width="140" height="30" viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+                    <line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                    <line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                    <circle cx="15" cy="15" r="3.5" fill="#00d2ff" />
+                    <text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold" letter-spacing="0.5">
+                        Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan>
+                    </text>
+                </svg>
+            </div>
+
             <div style="font-size: 14px;">
                 <span id="navUserName" style="margin-right: 15px;">User</span>
                 <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Log Out</button>
