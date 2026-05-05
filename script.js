@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
 
+
     // Initialize Firebase 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
