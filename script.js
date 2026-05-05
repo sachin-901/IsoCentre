@@ -506,19 +506,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return {
                     margin: [-40, 15, -40, 0], // Pushes the blue background perfectly to the paper edges
                     table: {
-                        widths: ['*'],
+                        widths: ['*', '*', '*'], // Forces 3 strictly equal columns
                         body: [
                             [
-                                {
-                                    fillColor: '#0056b3',
-                                    // Internal layout of the blue bar with precise left/center/right SVG placement
-                                    columns: [
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'left', margin: [60, 2, 0, 2] },   // 60px padding from the left edge
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'center', margin: [0, 2, 0, 2] },
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'right', margin: [0, 2, 60, 2] }   // 60px padding from the right edge
-                                    ],
-                                    border: [false, false, false, false]
-                                }
+                                // Left Logo: 80px padding from the left edge
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'left', margin: [80, 2, 0, 2] },
+                                
+                                // Center Logo: Perfectly centered in the middle column
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'center', margin: [0, 2, 0, 2] },
+                                
+                                // Right Logo: 80px padding from the right edge
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'right', margin: [0, 2, 80, 2] }
                             ]
                         ]
                     },
