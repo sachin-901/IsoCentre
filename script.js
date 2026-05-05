@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
 
-    // Initialize Firebase (Using the global 'firebase' object from your HTML)
+    // Initialize Firebase 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -29,12 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auth State Observer
     auth.onAuthStateChanged((user) => {
         if (user) {
-            // Logged in securely
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
             document.getElementById('navUserName').textContent = user.email;
         } else {
-            // Logged out
             appContainer.style.display = 'none';
             loginContainer.style.display = 'block';
         }
@@ -69,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. CALCULATOR LOGIC
     // ==========================================
 
-    // --- Logo Upload Handling ---
     let logoBase64 = null;
     document.getElementById('logoInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -78,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(file) reader.readAsDataURL(file);
     });
 
-    // --- Setup Logic (PDD vs TPR labels) ---
     const setupSelect = document.getElementById('setup');
     const thPdd = document.getElementById('th-pdd');
 
@@ -98,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         phantomOther.style.display = phantomSelect.value === 'Other' ? 'block' : 'none';
     });
 
-    // --- Bi-Directional Sync: Routine M <--> M1 ---
     const mPosInputs = [document.getElementById('m_pos_1'), document.getElementById('m_pos_2'), document.getElementById('m_pos_3')];
     const mNegInputs = [document.getElementById('m_neg_1'), document.getElementById('m_neg_2'), document.getElementById('m_neg_3')];
     const m1Inputs = [document.getElementById('m1_1'), document.getElementById('m1_2'), document.getElementById('m1_3')];
@@ -124,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
     m1Inputs.forEach(input => input.addEventListener('input', syncM1ToRoutine));
     routineRadios.forEach(radio => radio.addEventListener('change', syncRoutineToM1));
 
-    // Attach global calculation triggers
     document.querySelectorAll('.worksheet-section input:not(.row-input), .worksheet-section select:not(.row-input)').forEach(input => {
         input.addEventListener('input', calculateAllDoses);
         input.addEventListener('change', calculateAllDoses);
@@ -138,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('toleranceSelect').addEventListener('change', calculateAllDoses);
 
-    // Helpers
     function getVal(id) { const val = parseFloat(document.getElementById(id).value); return isNaN(val) ? null : val; }
     function getText(id) { return document.getElementById(id).value || '---'; }
     function getRowVal(inputObj) { const val = parseFloat(inputObj.value); return isNaN(val) ? null : val; }
@@ -164,7 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return arr;
     }
 
-    // --- Main Calculation Engine ---
     function calculateAllDoses() {
         let t0 = getVal('t0'), p0 = getVal('p0'), p0_unit = document.getElementById('p0_unit').value;
         let t_meas = getVal('t_meas'), p_meas = getVal('p_meas'), p_meas_unit = document.getElementById('p_meas_unit').value;
@@ -290,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Dynamic Row Addition ---
     function addEnergyRow() {
         const tbody = document.querySelector('#doseTable tbody');
         const tr = document.createElement('tr');
@@ -327,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
-    addEnergyRow(); // Add first row automatically
+    addEnergyRow(); 
 
 
     // ==========================================
@@ -352,9 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // --- White SVG Logo for Footer ---
+        // --- FIXED White SVG Logo for Footer ---
+        // Notice the viewBox is now 115 instead of 140. This crops out the invisible right-side blank space!
         const whiteIsoLogo = `
-            <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 115 30" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
                 <line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
                 <line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
@@ -499,28 +491,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 45], 
+            pageMargins: [40, 40, 40, 40], // Reduced bottom margin so the footer sits perfectly at the bottom
             
-            // --- Custom Blue Footer Bar ---
+            // --- PERFECTED THIN BLUE FOOTER BAR ---
             footer: function(currentPage, pageCount) {
                 return {
-                    margin: [-40, 15, -40, 0], // Pushes the blue background perfectly to the paper edges
+                    margin: [-40, 20, -40, 0], // Margin-top 20 pushes the bar down flush to the page bottom
                     table: {
-                        widths: ['*', '*', '*'], // Forces 3 strictly equal columns
+                        widths: ['*', '*', '*'],
                         body: [
                             [
-                                // Left Logo: 80px padding from the left edge
-                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'left', margin: [80, 2, 0, 2] },
+                                // Left margin of 40 aligns the logo perfectly with the page's text boundary
+                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'left', margin: [40, 1, 0, 1] },
                                 
-                                // Center Logo: Perfectly centered in the middle column
-                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'center', margin: [0, 2, 0, 2] },
+                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'center', margin: [0, 1, 0, 1] },
                                 
-                                // Right Logo: 80px padding from the right edge
-                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'right', margin: [0, 2, 80, 2] }
+                                // Right margin of 40 now correctly mirrors the left margin (since the SVG invisible space is gone)
+                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'right', margin: [0, 1, 40, 1] }
                             ]
                         ]
                     },
-                    // This layout property ensures the table has absolutely ZERO default padding, keeping the bar thin
                     layout: {
                         defaultBorder: false,
                         paddingLeft: function() { return 0; },
@@ -541,12 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableWrapper: { margin: [0, 5, 0, 15] }
             },
             content: [
-                // --- Header (Dark Logo Removed) ---
+                // --- Header (Dark Logo Removed & Balanced) ---
                 {
                     columns: [
-                        // Left: Hospital Logo
                         logoBase64 ? { image: logoBase64, width: 80, alignment: 'left' } : { text: '', width: 80 },
-                        // Center: Title Text
                         {
                             width: '*',
                             text: [
@@ -554,8 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        // Right: Empty spacer block to keep the center title perfectly balanced
-                        { width: 80, text: '' } 
+                        { width: 80, text: '' } // Empty spacer to keep the center title balanced
                     ],
                     margin: [0, 0, 0, 20]
                 },
