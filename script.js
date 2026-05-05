@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
       messagingSenderId: "942327539222",
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
+
     // Initialize Firebase (Using the global 'firebase' object from your HTML)
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -354,11 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Custom SVG Logos for PDF ---
         const darkIsoLogo = `
             <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="15" cy="15" r="10" fill="none" stroke="#0056b3" stroke-width="2" opacity="0.4"/>
-                <line x1="15" y1="2" x2="15" y2="28" stroke="#0056b3" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
-                <line x1="2" y1="15" x2="28" y2="15" stroke="#0056b3" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
-                <circle cx="15" cy="15" r="3.5" fill="#0056b3" />
-                <text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#0056b3" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#4488ff">Centre</tspan></text>
+                <circle cx="15" cy="15" r="10" fill="none" stroke="#0056b3" stroke-width="2.5" opacity="0.6"/>
+                <line x1="15" y1="2" x2="15" y2="28" stroke="#0056b3" stroke-width="2" stroke-dasharray="2 2" opacity="0.9"/>
+                <line x1="2" y1="15" x2="28" y2="15" stroke="#0056b3" stroke-width="2" stroke-dasharray="2 2" opacity="0.9"/>
+                <circle cx="15" cy="15" r="4.5" fill="#0056b3" />
+                <text x="35" y="21" font-family="Arial, sans-serif" font-size="20" fill="#0056b3" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#2b6cb0">Centre</tspan></text>
             </svg>`;
 
         const whiteIsoLogo = `
@@ -507,26 +508,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 65], // Extra margin at bottom for the new footer
+            pageMargins: [40, 40, 40, 50], 
             
-            // --- Custom Blue Footer Bar ---
+            // --- Custom Blue Footer Bar (Full Width, Distributed) ---
             footer: function(currentPage, pageCount) {
                 return {
-                    margin: [40, 5, 40, 0], 
+                    margin: [-40, 10, -40, 0], // Negative margins push it to the physical edge
                     table: {
-                        widths: ['*'],
+                        widths: ['*', '*', '*'],
                         body: [
                             [
-                                {
-                                    fillColor: '#0056b3', // Background bar
-                                    margin: [20, 8, 20, 8], // Padding
-                                    columns: [
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'left' },
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'center' },
-                                        { svg: whiteIsoLogo, width: 80, alignment: 'right' }
-                                    ],
-                                    border: [false, false, false, false]
-                                }
+                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'left', margin: [40, 4, 0, 4] },
+                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'center', margin: [0, 4, 0, 4] },
+                                { svg: whiteIsoLogo, width: 90, fillColor: '#0056b3', alignment: 'right', margin: [0, 4, 40, 4] }
                             ]
                         ]
                     },
@@ -555,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        { svg: darkIsoLogo, width: 80, alignment: 'right' }
+                        { svg: darkIsoLogo, width: 110, alignment: 'right', margin: [0, 4, 0, 0] }
                     ],
                     margin: [0, 0, 0, 20]
                 },
