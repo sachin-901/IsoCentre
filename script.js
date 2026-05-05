@@ -343,10 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // --- FIXED White SVG Logo for Footer ---
-        // Notice the viewBox is now 115 instead of 140. This crops out the invisible right-side blank space!
+        // --- FULL, UNCUT SVG LOGO ---
+        // ViewBox is restored to 140 width so the "Centre" text renders completely.
         const whiteIsoLogo = `
-            <svg viewBox="0 0 115 30" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
                 <line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
                 <line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
@@ -491,26 +491,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 40], // Reduced bottom margin so the footer sits perfectly at the bottom
+            pageMargins: [40, 40, 40, 40], // Base margins 
             
-            // --- PERFECTED THIN BLUE FOOTER BAR ---
+            // --- SYMMETRICAL 5-COLUMN FOOTER FIX ---
             footer: function(currentPage, pageCount) {
                 return {
-                    margin: [-40, 20, -40, 0], // Margin-top 20 pushes the bar down flush to the page bottom
+                    margin: [-40, 20, -40, 0], // Margin-top 20 pushes it to the bottom, [-40] forces full edge-to-edge bleed
                     table: {
-                        widths: ['*', '*', '*'],
+                        // 5 columns: Exactly 40px spacers on the ends, with evenly distributed content in the middle
+                        widths: [40, '*', '*', '*', 40], 
                         body: [
                             [
-                                // Left margin of 40 aligns the logo perfectly with the page's text boundary
-                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'left', margin: [40, 1, 0, 1] },
-                                
-                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'center', margin: [0, 1, 0, 1] },
-                                
-                                // Right margin of 40 now correctly mirrors the left margin (since the SVG invisible space is gone)
-                                { svg: whiteIsoLogo, width: 65, fillColor: '#0056b3', alignment: 'right', margin: [0, 1, 40, 1] }
+                                { text: '', fillColor: '#0056b3' }, // Left explicit spacer block
+                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'left', margin: [0, 4, 0, 4] },
+                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'center', margin: [0, 4, 0, 4] },
+                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'right', margin: [0, 4, 0, 4] },
+                                { text: '', fillColor: '#0056b3' }  // Right explicit spacer block
                             ]
                         ]
                     },
+                    // This strips all default table borders and invisible padding that pdfMake tries to add
                     layout: {
                         defaultBorder: false,
                         paddingLeft: function() { return 0; },
@@ -534,7 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- Header (Dark Logo Removed & Balanced) ---
                 {
                     columns: [
+                        // Left: Hospital Logo
                         logoBase64 ? { image: logoBase64, width: 80, alignment: 'left' } : { text: '', width: 80 },
+                        
+                        // Center: Title Text
                         {
                             width: '*',
                             text: [
@@ -542,7 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        { width: 80, text: '' } // Empty spacer to keep the center title balanced
+                        
+                        // Right: Empty spacer to perfectly mirror the left image, keeping title dead center
+                        { width: 80, text: '' } 
                     ],
                     margin: [0, 0, 0, 20]
                 },
