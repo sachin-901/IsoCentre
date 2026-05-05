@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Login Logic
     loginBtn.addEventListener('click', () => {
+        alert("The button works!");
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPassword').value;
         
