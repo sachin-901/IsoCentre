@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     // IMPORTANT: Replace this block with your actual keys from the Firebase Console!
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "firebase/app";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
       authDomain: "trs-398-output-measurement.firebaseapp.com",
@@ -13,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
       messagingSenderId: "942327539222",
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
