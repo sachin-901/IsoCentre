@@ -344,8 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
-        // --- FULL, UNCUT SVG LOGO ---
-        // ViewBox is restored to 140 width so the "Centre" text renders completely.
+        // --- FULL, PERFECT SVG LOGO ---
         const whiteIsoLogo = `
             <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
@@ -492,34 +491,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 40], // Base margins 
-            
-            // --- SYMMETRICAL 5-COLUMN FOOTER FIX ---
-            footer: function(currentPage, pageCount) {
-                return {
-                    margin: [-40, 20, -40, 0], // Margin-top 20 pushes it to the bottom, [-40] forces full edge-to-edge bleed
-                    table: {
-                        // 5 columns: Exactly 40px spacers on the ends, with evenly distributed content in the middle
-                        widths: [40, '*', '*', '*', 40], 
-                        body: [
-                            [
-                                { text: '', fillColor: '#0056b3' }, // Left explicit spacer block
-                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'left', margin: [0, 4, 0, 4] },
-                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'center', margin: [0, 4, 0, 4] },
-                                { svg: whiteIsoLogo, width: 85, fillColor: '#0056b3', alignment: 'right', margin: [0, 4, 0, 4] },
-                                { text: '', fillColor: '#0056b3' }  // Right explicit spacer block
-                            ]
-                        ]
+            pageMargins: [40, 40, 40, 50], // Base margins 
+
+            // --- THE ABSOLUTE POSITIONING FIX ---
+            // This completely bypasses the buggy table engine by drawing directly onto the page canvas
+            footer: function(currentPage, pageCount, pageSize) {
+                return [
+                    // 1. Draw the blue bar covering the entire physical width of the bottom
+                    {
+                        canvas: [
+                            { type: 'rect', x: 0, y: 0, w: pageSize.width, h: 32, color: '#0056b3' }
+                        ],
+                        absolutePosition: { x: 0, y: pageSize.height - 32 }
                     },
-                    // This strips all default table borders and invisible padding that pdfMake tries to add
-                    layout: {
-                        defaultBorder: false,
-                        paddingLeft: function() { return 0; },
-                        paddingRight: function() { return 0; },
-                        paddingTop: function() { return 0; },
-                        paddingBottom: function() { return 0; }
+                    // 2. Place the logos exactly within the document's side margins
+                    {
+                        columns: [
+                            { svg: whiteIsoLogo, width: 95, alignment: 'left' },
+                            { svg: whiteIsoLogo, width: 95, alignment: 'center' },
+                            { svg: whiteIsoLogo, width: 95, alignment: 'right' }
+                        ],
+                        // x: 40 perfectly aligns with your text's left margin. 
+                        // y: adjusts vertical centering inside the 32px blue bar.
+                        absolutePosition: { x: 40, y: pageSize.height - 27 }, 
+                        // By forcing the exact width (total page minus both 40px margins), 
+                        // the right-aligned logo will physically lock to the exact right text margin!
+                        width: pageSize.width - 80 
                     }
-                };
+                ];
             },
 
             styles: {
