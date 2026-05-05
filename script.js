@@ -13,8 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
       messagingSenderId: "942327539222",
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
-
-    // Initialize Firebase
+    // Initialize Firebase (Using the global 'firebase' object from your HTML)
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -66,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ==========================================
-    // 2. CALCULATOR LOGIC & PDF GENERATION
+    // 2. CALCULATOR LOGIC
     // ==========================================
 
     // --- Logo Upload Handling ---
@@ -329,7 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
     addEnergyRow(); // Add first row automatically
 
-    // --- PDFMAKE Custom PDF Generation ---
+
+    // ==========================================
+    // 3. PDF GENERATION WITH IsoCentre BRANDING
+    // ==========================================
+
     document.getElementById('generatePdfBtn').addEventListener('click', () => {
         
         const therapyUnit = getText('therapyUnit');
@@ -348,6 +351,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR';
         const refUnit = document.getElementById('refDoseUnit').value;
 
+        // --- Custom SVG Logos for PDF ---
+        const darkIsoLogo = `
+            <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15" cy="15" r="10" fill="none" stroke="#0056b3" stroke-width="2" opacity="0.4"/>
+                <line x1="15" y1="2" x2="15" y2="28" stroke="#0056b3" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                <line x1="2" y1="15" x2="28" y2="15" stroke="#0056b3" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                <circle cx="15" cy="15" r="3.5" fill="#0056b3" />
+                <text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#0056b3" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#4488ff">Centre</tspan></text>
+            </svg>`;
+
+        const whiteIsoLogo = `
+            <svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+                <line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                <line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                <circle cx="15" cy="15" r="3.5" fill="#00d2ff" />
+                <text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan></text>
+            </svg>`;
+
+        // --- PDF Tables Construction ---
         let ktpTable = {
             widths: ['auto', 'auto'],
             body: [
@@ -480,10 +503,37 @@ document.addEventListener('DOMContentLoaded', () => {
             resultsTableBody.push(pdfRow);
         });
 
+        // --- Document Definition ---
         const docDefinition = {
             pageSize: 'A4',
             pageOrientation: 'landscape',
-            pageMargins: [40, 40, 40, 40],
+            pageMargins: [40, 40, 40, 65], // Extra margin at bottom for the new footer
+            
+            // --- Custom Blue Footer Bar ---
+            footer: function(currentPage, pageCount) {
+                return {
+                    margin: [40, 5, 40, 0], 
+                    table: {
+                        widths: ['*'],
+                        body: [
+                            [
+                                {
+                                    fillColor: '#0056b3', // Background bar
+                                    margin: [20, 8, 20, 8], // Padding
+                                    columns: [
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'left' },
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'center' },
+                                        { svg: whiteIsoLogo, width: 80, alignment: 'right' }
+                                    ],
+                                    border: [false, false, false, false]
+                                }
+                            ]
+                        ]
+                    },
+                    layout: 'noBorders'
+                };
+            },
+
             styles: {
                 title: { fontSize: 16, bold: true, color: '#0056b3', alignment: 'center', margin: [0, 0, 0, 5] },
                 subtitle: { fontSize: 12, alignment: 'center', margin: [0, 0, 0, 20] },
@@ -494,9 +544,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableWrapper: { margin: [0, 5, 0, 15] }
             },
             content: [
+                // --- Header with Logos ---
                 {
                     columns: [
-                        logoBase64 ? { image: logoBase64, width: 80 } : { text: '', width: 80 },
+                        logoBase64 ? { image: logoBase64, width: 80, alignment: 'left' } : { text: '', width: 80 },
                         {
                             width: '*',
                             text: [
@@ -504,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' }
                             ]
                         },
-                        { width: 80, text: '' } 
+                        { svg: darkIsoLogo, width: 80, alignment: 'right' }
                     ],
                     margin: [0, 0, 0, 20]
                 },
