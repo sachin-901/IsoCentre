@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 1. FIREBASE AUTHENTICATION & SETUP
     // ==========================================
-    
+
     const firebaseConfig = {
       apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
       authDomain: "trs-398-output-measurement.firebaseapp.com",
@@ -127,23 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Trigger warning check when QA date changes
     document.getElementById('date').addEventListener('change', checkCalibrationWarning);
 
-    // When Therapy Unit Changes: Show valid chambers, clear table, add fresh row
     document.getElementById('therapyUnit').addEventListener('change', (e) => {
         const machineId = e.target.value;
         const cSelect = document.getElementById('qaChamberSelect');
         cSelect.innerHTML = '<option value="">-- Select Chamber --</option>';
         
-        // Reset chamber details
         document.getElementById('chamberModel').value = '';
         document.getElementById('chamberSerial').value = '';
         document.getElementById('ndw').value = '';
+        document.getElementById('calLab').value = '';
         document.getElementById('chamberWarning').style.display = 'none';
 
         if (machineId) {
-            // Only show chambers mapped to this machine
             const validChambers = qaChambersData.filter(c => c.targetMachineId === machineId);
             validChambers.forEach(c => {
                 let opt = document.createElement('option'); opt.value = c.id; opt.textContent = `${c.model} (SN: ${c.serial})`;
@@ -151,13 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Reset table completely
         document.querySelector('#doseTable tbody').innerHTML = '';
         if(machineId) addEnergyRow(); 
         calculateAllDoses();
     });
 
-    // When Chamber Changes: Auto-fill NDw, update all kQ values in table, check expiration
     document.getElementById('qaChamberSelect').addEventListener('change', (e) => {
         const chamberId = e.target.value;
         const c = qaChambersData.find(ch => ch.id === chamberId);
@@ -165,15 +160,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('chamberModel').value = c.model;
             document.getElementById('chamberSerial').value = c.serial;
             document.getElementById('ndw').value = c.ndw;
+            document.getElementById('calLab').value = c.calLab || '';
         } else {
             document.getElementById('chamberModel').value = '';
             document.getElementById('chamberSerial').value = '';
             document.getElementById('ndw').value = '';
+            document.getElementById('calLab').value = '';
         }
         
         checkCalibrationWarning();
 
-        // Force rows to re-fetch kQ
         document.querySelectorAll('.inp-energy').forEach(select => {
             select.dispatchEvent(new Event('change'));
         });
@@ -193,8 +189,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const setupSelect = document.getElementById('setup');
+    const thPdd = document.getElementById('th-pdd');
+
+    function updateSetupLabels() {
+        if (setupSelect.value === 'SSD') {
+            thPdd.innerHTML = 'PDD (%) <span class="required">*</span>';
+        } else {
+            thPdd.innerHTML = 'TMR <span class="required">*</span>';
+        }
+    }
+
     setupSelect.addEventListener('change', () => {
-        document.getElementById('th-pdd').innerHTML = setupSelect.value === 'SSD' ? 'PDD (%) <span class="required">*</span>' : 'TPR <span class="required">*</span>';
+        updateSetupLabels();
+        
+        // Auto-update the PDD/TMR fields for all existing rows when setup changes
+        document.querySelectorAll('#doseTable tbody tr').forEach(tr => {
+            const selectedEnergy = tr.querySelector('.inp-energy').value;
+            const machineId = document.getElementById('therapyUnit').value;
+            const machine = qaMachinesData.find(m => m.id === machineId);
+            const setupVal = setupSelect.value;
+            
+            if (machine && selectedEnergy) {
+                const energyData = machine.energies.find(en => en.energy === selectedEnergy);
+                if (energyData) {
+                    tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
+                }
+            }
+        });
         calculateAllDoses();
     });
 
@@ -365,17 +386,30 @@ document.addEventListener('DOMContentLoaded', () => {
             <td class="no-print"><button class="remove-btn">X</button></td>
         `;
         
-        // Smart Event Listener: Auto-fill kQ when energy is selected
+        // Smart Event Listener: Auto-fill kQ AND Reference PDD/TMR when energy is selected
         tr.querySelector('.inp-energy').addEventListener('change', (e) => {
             const selectedEnergy = e.target.value;
             const chamberId = document.getElementById('qaChamberSelect').value;
             const chamber = qaChambersData.find(c => c.id === chamberId);
             
+            // Fill kQ
             if (chamber && chamber.kqFactors && chamber.kqFactors[selectedEnergy]) {
                 tr.querySelector('.inp-kq').value = chamber.kqFactors[selectedEnergy];
             } else {
                 tr.querySelector('.inp-kq').value = '';
             }
+
+            // Fill Reference PDD or TMR based on Setup
+            const setupVal = document.getElementById('setup').value;
+            if (machine) {
+                const energyData = machine.energies.find(en => en.energy === selectedEnergy);
+                if (energyData) {
+                    tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
+                } else {
+                    tr.querySelector('.inp-pdd').value = '';
+                }
+            }
+
             calculateAllDoses();
         });
 
@@ -488,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentHospitalId) return alert("Error: User does not belong to a hospital.");
         const model = document.getElementById('adminChamberModel').value, serial = document.getElementById('adminChamberSerial').value;
         const ndw = parseFloat(document.getElementById('adminChamberNdw').value), machineId = document.getElementById('adminTargetMachine').value;
+        const calLab = document.getElementById('adminChamberCalLab').value;
         const calDate = document.getElementById('adminChamberCalDate').value;
         const calDueDate = document.getElementById('adminChamberCalDueDate').value;
 
@@ -499,6 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ndw: ndw, 
                 targetMachineId: machineId, 
                 kqFactors: calculatedKqFactors, 
+                calLab: calLab || '',
                 calDate: calDate || null,
                 calDueDate: calDueDate || null,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp() 
@@ -507,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('adminChamberModel').value = ''; 
             document.getElementById('adminChamberSerial').value = ''; 
             document.getElementById('adminChamberNdw').value = ''; 
+            document.getElementById('adminChamberCalLab').value = '';
             document.getElementById('adminChamberCalDate').value = '';
             document.getElementById('adminChamberCalDueDate').value = '';
             document.getElementById('chamberKqSection').style.display = 'none'; 
@@ -523,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const therapyUnit = getText('therapyUnit'); let phant = document.getElementById('phantomSelect').value; if(phant === 'Other') phant = getText('phantomOther');
         const setup = document.getElementById('setup').value, zref = getText('zref'), fSize = getText('fieldSize'), mu = getText('num_mu');
         const kTP = document.getElementById('kTP_result').textContent, kPol = document.getElementById('kPol_result').textContent, kS = document.getElementById('kS_result').textContent, kElec = getText('kelec');
-        const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TPR', refUnit = document.getElementById('refDoseUnit').value;
+        const pddOrTpr = setup === 'SSD' ? 'PDD (%)' : 'TMR', refUnit = document.getElementById('refDoseUnit').value;
 
         const whiteIsoLogo = `<svg viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg"><circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/><line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/><line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/><circle cx="15" cy="15" r="3.5" fill="#00d2ff" /><text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan></text></svg>`;
 
