@@ -199,23 +199,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    setupSelect.addEventListener('change', () => {
-        updateSetupLabels();
+    // --- Smart Row Updater ---
+    // Refreshes the Reference Output (with unit conversion) and Ref PDD/TMR for a given row
+    function updateRowReferenceData(tr) {
+        const selectedEnergy = tr.querySelector('.inp-energy').value;
+        const machineId = document.getElementById('therapyUnit').value;
+        const machine = qaMachinesData.find(m => m.id === machineId);
+        const setupVal = setupSelect.value;
+        const qaUnit = document.getElementById('refDoseUnit').value;
         
-        // Auto-update the PDD/TMR fields for all existing rows when setup changes
-        document.querySelectorAll('#doseTable tbody tr').forEach(tr => {
-            const selectedEnergy = tr.querySelector('.inp-energy').value;
-            const machineId = document.getElementById('therapyUnit').value;
-            const machine = qaMachinesData.find(m => m.id === machineId);
-            const setupVal = setupSelect.value;
-            
-            if (machine && selectedEnergy) {
-                const energyData = machine.energies.find(en => en.energy === selectedEnergy);
-                if (energyData) {
-                    tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
+        if (machine && selectedEnergy) {
+            const energyData = machine.energies.find(en => en.energy === selectedEnergy);
+            if (energyData) {
+                // Set Setup-Specific PDD/TMR
+                tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
+                
+                // Smart Convert Ref Output based on QA unit vs Commissioned Unit
+                const commUnit = energyData.refOutputUnit || 'cGy/MU';
+                const commVal = setupVal === 'SSD' ? energyData.refOutputSsd : energyData.refOutputSad;
+                
+                if (commVal) {
+                    const convertedVal = (commUnit === qaUnit) ? commVal : (1 / commVal);
+                    tr.querySelector('.inp-ref').value = convertedVal.toFixed(4);
+                } else {
+                    tr.querySelector('.inp-ref').value = '';
                 }
             }
-        });
+        }
+    }
+
+    setupSelect.addEventListener('change', () => {
+        updateSetupLabels();
+        document.querySelectorAll('#doseTable tbody tr').forEach(tr => updateRowReferenceData(tr));
+        calculateAllDoses();
+    });
+
+    document.getElementById('refDoseUnit').addEventListener('change', (e) => {
+        document.getElementById('th-ref-unit').textContent = `[${e.target.value}]`;
+        document.getElementById('th-dzmax-unit').textContent = `[${e.target.value}]`;
+        document.querySelectorAll('#doseTable tbody tr').forEach(tr => updateRowReferenceData(tr));
         calculateAllDoses();
     });
 
@@ -244,12 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.worksheet-section input:not(.row-input), .worksheet-section select:not(.row-input)').forEach(i => {
         i.addEventListener('input', calculateAllDoses); i.addEventListener('change', calculateAllDoses);
-    });
-
-    document.getElementById('refDoseUnit').addEventListener('change', (e) => {
-        document.getElementById('th-ref-unit').textContent = `[${e.target.value}]`;
-        document.getElementById('th-dzmax-unit').textContent = `[${e.target.value}]`;
-        calculateAllDoses();
     });
 
     function getVal(id) { const el = document.getElementById(id); return el ? (isNaN(parseFloat(el.value)) ? null : parseFloat(el.value)) : null; }
@@ -368,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             machine.energies.forEach(e => { energyOptions += `<option value="${e.energy}">${e.energy}</option>`; });
         }
 
+        // Add row HTML including the "Set Base" button for qualified physicists
         tr.innerHTML = `
             <td><select class="row-input inp-energy" style="width:100%; padding: 4px;">${energyOptions}</select></td>
             <td>
@@ -381,36 +398,74 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><input type="number" step="0.001" class="row-input inp-kq readonly-input" readonly></td>
             <td><input type="number" step="0.01" class="row-input inp-pdd"></td>
             <td><input type="number" step="0.01" class="row-input inp-ref"></td>
-            <td class="td-result out-dzmax">---</td>
+            <td class="td-result out-dzmax" style="font-weight:bold;">---</td>
             <td class="td-result out-var">---</td>
-            <td class="no-print"><button class="remove-btn">X</button></td>
+            <td class="no-print" style="vertical-align: middle;">
+                <button class="btn remove-btn" style="background:#d9534f; padding:4px 8px; margin-bottom: 5px;">X</button><br>
+                <button class="btn set-baseline-btn" style="display:${(currentUserRole === 'chief_physicist' || currentUserRole === 'admin') ? 'block' : 'none'}; background:#007bff; padding:4px 6px; font-size:11px;">Set Base</button>
+            </td>
         `;
         
-        // Smart Event Listener: Auto-fill kQ AND Reference PDD/TMR when energy is selected
+        // When Energy changes, auto-fill kQ AND Reference PDD/TMR and Output
         tr.querySelector('.inp-energy').addEventListener('change', (e) => {
             const selectedEnergy = e.target.value;
             const chamberId = document.getElementById('qaChamberSelect').value;
             const chamber = qaChambersData.find(c => c.id === chamberId);
             
-            // Fill kQ
             if (chamber && chamber.kqFactors && chamber.kqFactors[selectedEnergy]) {
                 tr.querySelector('.inp-kq').value = chamber.kqFactors[selectedEnergy];
             } else {
                 tr.querySelector('.inp-kq').value = '';
             }
+            
+            updateRowReferenceData(tr);
+            calculateAllDoses();
+        });
 
-            // Fill Reference PDD or TMR based on Setup
+        // The "Set Baseline" Click Event
+        tr.querySelector('.set-baseline-btn').addEventListener('click', async () => {
+            const mId = document.getElementById('therapyUnit').value;
+            const selectedEnergy = tr.querySelector('.inp-energy').value;
+            const dzmaxStr = tr.querySelector('.out-dzmax').textContent;
             const setupVal = document.getElementById('setup').value;
-            if (machine) {
-                const energyData = machine.energies.find(en => en.energy === selectedEnergy);
-                if (energyData) {
-                    tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
-                } else {
-                    tr.querySelector('.inp-pdd').value = '';
-                }
+            const qaUnit = document.getElementById('refDoseUnit').value;
+
+            if (!mId || !selectedEnergy || dzmaxStr === '---') {
+                return alert("Cannot set baseline: Ensure machine, energy, and calculated dose are valid.");
             }
 
-            calculateAllDoses();
+            if (!confirm(`Are you sure you want to set the current measured output (${dzmaxStr} ${qaUnit}) as the new permanent Reference Baseline for ${selectedEnergy} in ${setupVal} mode?`)) return;
+
+            const measuredValue = parseFloat(dzmaxStr);
+            const mIndex = qaMachinesData.findIndex(m => m.id === mId);
+            if (mIndex === -1) return;
+            const mData = qaMachinesData[mIndex];
+            
+            const eIndex = mData.energies.findIndex(e => e.energy === selectedEnergy);
+            if (eIndex === -1) return;
+            
+            // Revert value back to the originally commissioned unit before saving to DB
+            const commUnit = mData.energies[eIndex].refOutputUnit || 'cGy/MU';
+            const valueToSave = (commUnit === qaUnit) ? measuredValue : (1 / measuredValue);
+
+            if (setupVal === 'SSD') {
+                mData.energies[eIndex].refOutputSsd = parseFloat(valueToSave.toFixed(4));
+            } else {
+                mData.energies[eIndex].refOutputSad = parseFloat(valueToSave.toFixed(4));
+            }
+
+            try {
+                // Write the updated machine data back to Firestore
+                await db.collection('Hospitals').doc(currentHospitalId).collection('Machines').doc(mId).update({
+                    energies: mData.energies
+                });
+                alert("Baseline updated successfully!");
+                updateRowReferenceData(tr);
+                calculateAllDoses();
+            } catch (error) {
+                console.error("Error updating baseline:", error);
+                alert("Failed to update baseline. Check permissions.");
+            }
         });
 
         tr.querySelectorAll('.row-input').forEach(inp => inp.addEventListener('input', calculateAllDoses));
@@ -438,10 +493,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('adminAddEnergyBtn').addEventListener('click', () => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV"></td>
-            <td><input type="number" step="0.001" class="admin-tpr"></td>
-            <td><input type="number" step="0.01" class="admin-pdd"></td>
-            <td><input type="number" step="0.01" class="admin-tmr"></td>
+            <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV" style="width: 70px;"></td>
+            <td><input type="number" step="0.001" class="admin-tpr" style="width: 70px;"></td>
+            <td><input type="number" step="0.01" class="admin-pdd" style="width: 70px;"></td>
+            <td><input type="number" step="0.01" class="admin-tmr" style="width: 70px;"></td>
+            <td>
+                <select class="admin-ref-unit" style="width: 85px;">
+                    <option value="cGy/MU">cGy/MU</option>
+                    <option value="MU/cGy">MU/cGy</option>
+                </select>
+            </td>
+            <td><input type="number" step="0.001" class="admin-ref-ssd" style="width: 80px;" placeholder="SSD"></td>
+            <td><input type="number" step="0.001" class="admin-ref-sad" style="width: 80px;" placeholder="SAD"></td>
             <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
         `;
         tr.querySelector('.admin-remove-btn').addEventListener('click', () => tr.remove());
@@ -459,6 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const tpr = parseFloat(row.querySelector('.admin-tpr').value);
             const pdd = parseFloat(row.querySelector('.admin-pdd').value);
             const tmr = parseFloat(row.querySelector('.admin-tmr').value);
+            const refUnit = row.querySelector('.admin-ref-unit').value;
+            const refSsd = parseFloat(row.querySelector('.admin-ref-ssd').value);
+            const refSad = parseFloat(row.querySelector('.admin-ref-sad').value);
             
             if (eName && !isNaN(tpr)) {
                 energies.push({ 
@@ -466,6 +532,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     tpr2010: tpr, 
                     refPdd: isNaN(pdd) ? null : pdd, 
                     refTmr: isNaN(tmr) ? null : tmr,
+                    refOutputUnit: refUnit,
+                    refOutputSsd: isNaN(refSsd) ? null : refSsd,
+                    refOutputSad: isNaN(refSad) ? null : refSad,
                     baselineSet: false 
                 });
             }
