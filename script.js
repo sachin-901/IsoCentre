@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
 
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -108,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     logoutBtn.addEventListener('click', () => auth.signOut());
 
-    // --- NAVIGATION LOGIC ---
     document.getElementById('qaOutputMeasurementCard').addEventListener('click', () => { showView('qa-output'); });
     if (toggleAdminBtn) { toggleAdminBtn.addEventListener('click', () => { showView('admin'); loadAdminMachines(); }); }
     document.getElementById('backToDashboardFromQaBtn').addEventListener('click', () => { showView('dashboard'); });
@@ -305,19 +303,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (v1 !== null && v2 !== null && v2 !== 0) {
             let ratio = v1 / v2; 
             document.getElementById('vRatioDisplay').textContent = ratio.toFixed(2);
-            let ratioStr = ratio.toFixed(1); // Strict exact match to TRS table (e.g. 3.0)
-            
+            let ratioStr = ratio.toFixed(1);
             let coeffs = a_coeffs[ratioStr];
+            
+            // STRICT EXACT MATCH CHECK: If user entered 2.05, it won't trigger "2.0"
+            if (Math.abs(ratio - parseFloat(ratioStr)) > 0.001) {
+                coeffs = undefined; 
+            }
+
             if (coeffs) {
-                document.getElementById('a0_val').textContent = coeffs[0]; document.getElementById('a1_val').textContent = coeffs[1]; document.getElementById('a2_val').textContent = coeffs[2];
+                document.getElementById('a0_val').textContent = coeffs[0]; 
+                document.getElementById('a1_val').textContent = coeffs[1]; 
+                document.getElementById('a2_val').textContent = coeffs[2];
                 if (m1_avg !== null && m2_avg !== null && m2_avg !== 0) {
                     kS = coeffs[0] + (coeffs[1] * (m1_avg/m2_avg)) + (coeffs[2] * Math.pow((m1_avg/m2_avg), 2));
                     document.getElementById('kS_result').textContent = kS.toFixed(4);
                 } else { document.getElementById('kS_result').textContent = "---"; }
             } else {
-                // If it does not strictly match TRS table ratios, DO NOT interpolate Ks
-                document.getElementById('a0_val').textContent = "N/A"; document.getElementById('a1_val').textContent = "N/A"; document.getElementById('a2_val').textContent = "N/A";
-                document.getElementById('kS_result').textContent = "Ratio not in TRS table"; kS = null; 
+                document.getElementById('a0_val').textContent = "N/A"; 
+                document.getElementById('a1_val').textContent = "N/A"; 
+                document.getElementById('a2_val').textContent = "N/A";
+                document.getElementById('kS_result').textContent = "Ratio not in TRS table"; 
+                kS = null; 
             }
         } else { document.getElementById('vRatioDisplay').textContent = "--"; document.getElementById('kS_result').textContent = "---"; }
 
@@ -367,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
             machine.energies.forEach(e => { energyOptions += `<option value="${e.energy}">${e.energy}</option>`; });
         }
 
-        // NOTE: The kq input is no longer readonly!
         tr.innerHTML = `
             <td><select class="row-input inp-energy" style="width:100%; padding: 4px;">${energyOptions}</select></td>
             <td>
@@ -378,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="mraw-avg-display">---</div>
             </td>
-            <td><input type="number" step="0.001" class="row-input inp-kq" style="width: 70px;"></td>
+            <td><input type="number" step="0.0001" class="row-input inp-kq" style="width: 70px;"></td>
             <td><input type="number" step="0.01" class="row-input inp-pdd"></td>
             <td><input type="number" step="0.01" class="row-input inp-ref"></td>
             <td class="td-result out-dzmax" style="font-weight:bold;">---</td>
@@ -395,9 +401,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const chamber = qaChambersData.find(c => c.id === chamberId);
             
             if (chamber && chamber.kqFactors && chamber.kqFactors[selectedEnergy]) {
-                tr.querySelector('.inp-kq').value = chamber.kqFactors[selectedEnergy];
+                tr.querySelector('.inp-kq').value = parseFloat(chamber.kqFactors[selectedEnergy]).toFixed(4);
             } else {
-                tr.querySelector('.inp-kq').value = ''; // Leave empty for manual entry
+                tr.querySelector('.inp-kq').value = ''; 
             }
             
             updateRowReferenceData(tr);
@@ -452,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.appendChild(tr);
     }
 
-    // Explicit prevent default on the add button to avoid form submission glitches
+    // Cleaned up double-binding issue:
     document.getElementById('addRowBtn').addEventListener('click', (e) => {
         e.preventDefault();
         addEnergyRow();
@@ -522,10 +528,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // TRUE IAEA TRS-398 TABLE 14 DATA FOR COMMON CHAMBERS
     const trs398Data = { 
-        "PTW30013": [ { tpr: 0.50, kq: 0.998 }, { tpr: 0.53, kq: 0.996 }, { tpr: 0.56, kq: 0.993 }, { tpr: 0.59, kq: 0.989 }, { tpr: 0.62, kq: 0.985 }, { tpr: 0.65, kq: 0.980 }, { tpr: 0.68, kq: 0.975 }, { tpr: 0.71, kq: 0.968 }, { tpr: 0.74, kq: 0.960 }, { tpr: 0.77, kq: 0.951 }, { tpr: 0.80, kq: 0.941 } ],
-        "NE2571": [ { tpr: 0.50, kq: 0.997 }, { tpr: 0.53, kq: 0.995 }, { tpr: 0.56, kq: 0.991 }, { tpr: 0.59, kq: 0.987 }, { tpr: 0.62, kq: 0.982 }, { tpr: 0.65, kq: 0.976 }, { tpr: 0.68, kq: 0.969 }, { tpr: 0.71, kq: 0.961 }, { tpr: 0.74, kq: 0.953 }, { tpr: 0.77, kq: 0.943 }, { tpr: 0.80, kq: 0.932 } ],
-        "FC65G": [ { tpr: 0.50, kq: 0.997 }, { tpr: 0.53, kq: 0.995 }, { tpr: 0.56, kq: 0.992 }, { tpr: 0.59, kq: 0.988 }, { tpr: 0.62, kq: 0.983 }, { tpr: 0.65, kq: 0.977 }, { tpr: 0.68, kq: 0.971 }, { tpr: 0.71, kq: 0.963 }, { tpr: 0.74, kq: 0.955 }, { tpr: 0.77, kq: 0.946 }, { tpr: 0.80, kq: 0.936 } ],
-        "CC13": [ { tpr: 0.50, kq: 0.998 }, { tpr: 0.53, kq: 0.996 }, { tpr: 0.56, kq: 0.993 }, { tpr: 0.59, kq: 0.989 }, { tpr: 0.62, kq: 0.985 }, { tpr: 0.65, kq: 0.981 }, { tpr: 0.68, kq: 0.976 }, { tpr: 0.71, kq: 0.969 }, { tpr: 0.74, kq: 0.961 }, { tpr: 0.77, kq: 0.953 }, { tpr: 0.80, kq: 0.944 } ]
+        "PTW30013": [ 
+            { tpr: 0.50, kq: 1.0021 }, { tpr: 0.53, kq: 1.0014 },
+            { tpr: 0.56, kq: 1.0007 }, { tpr: 0.59, kq: 0.9984 }, 
+            { tpr: 0.62, kq: 0.9956 }, { tpr: 0.65, kq: 0.9920 }, 
+            { tpr: 0.68, kq: 0.9876 }, { tpr: 0.70, kq: 0.9840 }, 
+            { tpr: 0.72, kq: 0.9800 }, { tpr: 0.74, kq: 0.9753 }, 
+            { tpr: 0.76, kq: 0.9699 }, { tpr: 0.78, kq: 0.9636 }, 
+            { tpr: 0.80, kq: 0.9565 }, { tpr: 0.82, kq: 0.9484 },
+            { tpr: 0.84, kq: 0.9392 }
+        ],
+        "NE2571": [ 
+            { tpr: 0.50, kq: 1.0016 }, { tpr: 0.53, kq: 1.0005 }, 
+            { tpr: 0.56, kq: 0.9995 }, { tpr: 0.59, kq: 0.9971 }, 
+            { tpr: 0.62, kq: 0.9942 }, { tpr: 0.65, kq: 0.9904 }, 
+            { tpr: 0.68, kq: 0.9858 }, { tpr: 0.70, kq: 0.9822 }, 
+            { tpr: 0.72, kq: 0.9781 }, { tpr: 0.74, kq: 0.9734 }, 
+            { tpr: 0.76, kq: 0.9680 }, { tpr: 0.78, kq: 0.9616 }, 
+            { tpr: 0.80, kq: 0.9544 }, { tpr: 0.82, kq: 0.9463 },
+            { tpr: 0.84, kq: 0.9367 }
+        ],
+        "FC65G": [ 
+            { tpr: 0.50, kq: 1.0016 }, { tpr: 0.53, kq: 1.0006 }, 
+            { tpr: 0.56, kq: 0.9996 }, { tpr: 0.59, kq: 0.9972 }, 
+            { tpr: 0.62, kq: 0.9943 }, { tpr: 0.65, kq: 0.9906 }, 
+            { tpr: 0.68, kq: 0.9860 }, { tpr: 0.70, kq: 0.9824 }, 
+            { tpr: 0.72, kq: 0.9784 }, { tpr: 0.74, kq: 0.9736 }, 
+            { tpr: 0.76, kq: 0.9682 }, { tpr: 0.78, kq: 0.9619 }, 
+            { tpr: 0.80, kq: 0.9548 }, { tpr: 0.82, kq: 0.9468 },
+            { tpr: 0.84, kq: 0.9372 }
+        ],
+        "CC13": [ 
+            { tpr: 0.50, kq: 1.0022 }, { tpr: 0.53, kq: 1.0014 }, 
+            { tpr: 0.56, kq: 1.0006 }, { tpr: 0.59, kq: 0.9983 }, 
+            { tpr: 0.62, kq: 0.9955 }, { tpr: 0.65, kq: 0.9918 }, 
+            { tpr: 0.68, kq: 0.9873 }, { tpr: 0.70, kq: 0.9837 }, 
+            { tpr: 0.72, kq: 0.9796 }, { tpr: 0.74, kq: 0.9749 }, 
+            { tpr: 0.76, kq: 0.9694 }, { tpr: 0.78, kq: 0.9630 }, 
+            { tpr: 0.80, kq: 0.9558 }, { tpr: 0.82, kq: 0.9477 },
+            { tpr: 0.84, kq: 0.9382 }
+        ]
     };
 
     function interpolateKq(model, tprTarget) {
@@ -536,15 +578,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (cleanModel.includes('FC65')) data = trs398Data['FC65G'];
         else if (cleanModel.includes('CC13')) data = trs398Data['CC13'];
 
-        // If chamber model is unknown, return 1.000 so the user can manually overwrite it
-        if (!data) return 1.000; 
+        if (!data) return ''; // Return empty so user can manually type if model not recognized
+
+        if (tprTarget < data[0].tpr) return data[0].kq;
+        if (tprTarget > data[data.length - 1].tpr) return data[data.length - 1].kq;
 
         for (let i = 0; i < data.length - 1; i++) {
             if (tprTarget >= data[i].tpr && tprTarget <= data[i+1].tpr) {
-                return parseFloat((data[i].kq + ((data[i+1].kq - data[i].kq) / (data[i+1].tpr - data[i].tpr)) * (tprTarget - data[i].tpr)).toFixed(3));
+                const slope = (data[i+1].kq - data[i].kq) / (data[i+1].tpr - data[i].tpr);
+                const kq = data[i].kq + slope * (tprTarget - data[i].tpr);
+                return parseFloat(kq.toFixed(4));
             }
         } 
-        return 1.000; 
+        return ''; 
     }
 
     let adminCurrentMachines = [];
@@ -567,8 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const machine = adminCurrentMachines.find(m => m.id === machineId);
         if(machine && machine.energies) {
             machine.energies.forEach(eng => {
-                const kq = interpolateKq(model, eng.tpr2010); calculatedKqFactors[eng.energy] = kq;
-                resultsDiv.innerHTML += `<div style="background: white; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"><strong>${eng.energy}</strong><br>TPR: ${eng.tpr2010} &rarr; <strong>k<sub>Q</sub>: ${kq}</strong></div>`;
+                const kq = interpolateKq(model, eng.tpr2010); 
+                if (kq !== '') calculatedKqFactors[eng.energy] = kq;
+                resultsDiv.innerHTML += `<div style="background: white; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"><strong>${eng.energy}</strong><br>TPR: ${eng.tpr2010} &rarr; <strong>k<sub>Q</sub>: ${kq !== '' ? kq : 'Manual Entry'}</strong></div>`;
             });
             kqSection.style.display = 'block';
             document.getElementById('chamberKqResults').dataset.calculatedKq = JSON.stringify(calculatedKqFactors);
