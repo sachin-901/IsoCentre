@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 1. FIREBASE AUTHENTICATION & SETUP
     // ==========================================
+    
     const firebaseConfig = {
       apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
       authDomain: "trs-398-output-measurement.firebaseapp.com",
@@ -101,6 +102,34 @@ document.addEventListener('DOMContentLoaded', () => {
         cSnap.forEach(doc => { qaChambersData.push({ id: doc.id, ...doc.data() }); });
     }
 
+    function checkCalibrationWarning() {
+        const qaDateVal = document.getElementById('date').value;
+        const chamberId = document.getElementById('qaChamberSelect').value;
+        const warningEl = document.getElementById('chamberWarning');
+        
+        if (!qaDateVal || !chamberId) {
+            if(warningEl) warningEl.style.display = 'none';
+            return;
+        }
+        
+        const chamber = qaChambersData.find(c => c.id === chamberId);
+        if (chamber && chamber.calDueDate) {
+            const qaDate = new Date(qaDateVal);
+            const dueDate = new Date(chamber.calDueDate);
+            if (qaDate > dueDate) {
+                warningEl.style.display = 'block';
+                warningEl.textContent = `⚠️ Warning: Chamber calibration expired on ${chamber.calDueDate}.`;
+            } else {
+                warningEl.style.display = 'none';
+            }
+        } else {
+            if(warningEl) warningEl.style.display = 'none';
+        }
+    }
+
+    // Trigger warning check when QA date changes
+    document.getElementById('date').addEventListener('change', checkCalibrationWarning);
+
     // When Therapy Unit Changes: Show valid chambers, clear table, add fresh row
     document.getElementById('therapyUnit').addEventListener('change', (e) => {
         const machineId = e.target.value;
@@ -111,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('chamberModel').value = '';
         document.getElementById('chamberSerial').value = '';
         document.getElementById('ndw').value = '';
+        document.getElementById('chamberWarning').style.display = 'none';
 
         if (machineId) {
             // Only show chambers mapped to this machine
@@ -127,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateAllDoses();
     });
 
-    // When Chamber Changes: Auto-fill NDw, update all kQ values in table
+    // When Chamber Changes: Auto-fill NDw, update all kQ values in table, check expiration
     document.getElementById('qaChamberSelect').addEventListener('change', (e) => {
         const chamberId = e.target.value;
         const c = qaChambersData.find(ch => ch.id === chamberId);
@@ -141,6 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ndw').value = '';
         }
         
+        checkCalibrationWarning();
+
         // Force rows to re-fetch kQ
         document.querySelectorAll('.inp-energy').forEach(select => {
             select.dispatchEvent(new Event('change'));
@@ -201,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getVal(id) { const el = document.getElementById(id); return el ? (isNaN(parseFloat(el.value)) ? null : parseFloat(el.value)) : null; }
     function getText(id) { 
-        if(id === 'therapyUnit') { // Handle select box text
+        if(id === 'therapyUnit') { 
             const select = document.getElementById('therapyUnit');
             return select.options[select.selectedIndex]?.text || '---';
         }
@@ -216,6 +248,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let avgEl = document.getElementById(baseId + '_avg');
         if (count === 0) { if(avgEl) avgEl.textContent = "---"; return null; }
         let avg = sum / count; if(avgEl) avgEl.textContent = avg.toFixed(4); return avg;
+    }
+
+    function getReadingsArray(baseId) {
+        let arr = [];
+        let v1 = getVal(baseId + '_1'), v2 = getVal(baseId + '_2'), v3 = getVal(baseId + '_3');
+        if (v1 !== null) arr.push(v1);
+        if (v2 !== null) arr.push(v2);
+        if (v3 !== null) arr.push(v3);
+        return arr;
     }
 
     function calculateAllDoses() {
@@ -362,7 +403,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('adminAddEnergyBtn').addEventListener('click', () => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input type="text" class="admin-energy-name"></td><td><input type="number" step="0.001" class="admin-tpr"></td><td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>`;
+        tr.innerHTML = `
+            <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV"></td>
+            <td><input type="number" step="0.001" class="admin-tpr"></td>
+            <td><input type="number" step="0.01" class="admin-pdd"></td>
+            <td><input type="number" step="0.01" class="admin-tmr"></td>
+            <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
+        `;
         tr.querySelector('.admin-remove-btn').addEventListener('click', () => tr.remove());
         document.querySelector('#adminEnergyTable tbody').appendChild(tr);
     });
@@ -376,7 +423,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#adminEnergyTable tbody tr').forEach(row => {
             const eName = row.querySelector('.admin-energy-name').value;
             const tpr = parseFloat(row.querySelector('.admin-tpr').value);
-            if (eName && !isNaN(tpr)) energies.push({ energy: eName, tpr2010: tpr, baselineSet: false });
+            const pdd = parseFloat(row.querySelector('.admin-pdd').value);
+            const tmr = parseFloat(row.querySelector('.admin-tmr').value);
+            
+            if (eName && !isNaN(tpr)) {
+                energies.push({ 
+                    energy: eName, 
+                    tpr2010: tpr, 
+                    refPdd: isNaN(pdd) ? null : pdd, 
+                    refTmr: isNaN(tmr) ? null : tmr,
+                    baselineSet: false 
+                });
+            }
         });
         if (energies.length === 0) return alert("Please add at least one valid energy.");
 
@@ -428,11 +486,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('saveChamberBtn').addEventListener('click', async () => {
         if (!currentHospitalId) return alert("Error: User does not belong to a hospital.");
-        const model = document.getElementById('adminChamberModel').value, serial = document.getElementById('adminChamberSerial').value, ndw = parseFloat(document.getElementById('adminChamberNdw').value), machineId = document.getElementById('adminTargetMachine').value;
-        if (!model || !serial || isNaN(ndw) || !machineId) return alert("Please fill out all chamber details and select a machine.");
+        const model = document.getElementById('adminChamberModel').value, serial = document.getElementById('adminChamberSerial').value;
+        const ndw = parseFloat(document.getElementById('adminChamberNdw').value), machineId = document.getElementById('adminTargetMachine').value;
+        const calDate = document.getElementById('adminChamberCalDate').value;
+        const calDueDate = document.getElementById('adminChamberCalDueDate').value;
+
+        if (!model || !serial || isNaN(ndw) || !machineId) return alert("Please fill out all required chamber details and select a machine.");
         try {
-            await db.collection('Hospitals').doc(currentHospitalId).collection('Chambers').add({ model: model, serial: serial, ndw: ndw, targetMachineId: machineId, kqFactors: calculatedKqFactors, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            alert("Chamber saved!"); document.getElementById('adminChamberModel').value = ''; document.getElementById('adminChamberSerial').value = ''; document.getElementById('adminChamberNdw').value = ''; document.getElementById('chamberKqSection').style.display = 'none'; document.getElementById('adminTargetMachine').value = '';
+            await db.collection('Hospitals').doc(currentHospitalId).collection('Chambers').add({ 
+                model: model, 
+                serial: serial, 
+                ndw: ndw, 
+                targetMachineId: machineId, 
+                kqFactors: calculatedKqFactors, 
+                calDate: calDate || null,
+                calDueDate: calDueDate || null,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+            alert("Chamber saved!"); 
+            document.getElementById('adminChamberModel').value = ''; 
+            document.getElementById('adminChamberSerial').value = ''; 
+            document.getElementById('adminChamberNdw').value = ''; 
+            document.getElementById('adminChamberCalDate').value = '';
+            document.getElementById('adminChamberCalDueDate').value = '';
+            document.getElementById('chamberKqSection').style.display = 'none'; 
+            document.getElementById('adminTargetMachine').value = '';
         } catch (error) { alert("Error saving chamber."); }
     });
 
@@ -490,12 +568,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const docDefinition = {
             pageSize: 'A4', pageOrientation: 'landscape', pageMargins: [40, 40, 40, 50], 
-            footer: function(currentPage, pageCount, pageSize) {
-                return [
-                    { canvas: [ { type: 'rect', x: 0, y: 0, w: pageSize.width, h: 32, color: '#0056b3' } ], absolutePosition: { x: 0, y: pageSize.height - 32 } },
-                    { columns: [ { svg: whiteIsoLogo, width: 95, alignment: 'left' }, { svg: whiteIsoLogo, width: 95, alignment: 'center' }, { svg: whiteIsoLogo, width: 95, alignment: 'right' } ], absolutePosition: { x: 40, y: pageSize.height - 27 }, width: pageSize.width - 80 }
-                ];
+            
+            // --- RESTORED 3-COLUMN TABLE FOOTER ---
+            footer: function(currentPage, pageCount) {
+                return {
+                    margin: [-40, 15, -40, 0], 
+                    table: {
+                        widths: ['*', '*', '*'], 
+                        body: [
+                            [
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'left', margin: [80, 2, 0, 2] },
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'center', margin: [0, 2, 0, 2] },
+                                { svg: whiteIsoLogo, width: 80, fillColor: '#0056b3', alignment: 'right', margin: [0, 2, 80, 2] }
+                            ]
+                        ]
+                    },
+                    layout: {
+                        defaultBorder: false,
+                        paddingLeft: function() { return 0; },
+                        paddingRight: function() { return 0; },
+                        paddingTop: function() { return 0; },
+                        paddingBottom: function() { return 0; }
+                    }
+                };
             },
+            
             styles: { title: { fontSize: 16, bold: true, color: '#0056b3', alignment: 'center', margin: [0, 0, 0, 5] }, subtitle: { fontSize: 12, alignment: 'center', margin: [0, 0, 0, 20] }, sectionHeader: { fontSize: 13, bold: true, color: '#0056b3', margin: [0, 15, 0, 8] }, th: { bold: true, fillColor: '#eef2f5', color: '#0056b3', alignment: 'center', margin: [0,4,0,4] }, cell: { margin: [0,4,0,4], alignment: 'center' }, label: { bold: true, color: '#333', alignment: 'center', margin: [0,4,0,4] } },
             content: [
                 { columns: [ logoBase64 ? { image: logoBase64, width: 80, alignment: 'left' } : { text: '', width: 80 }, { width: '*', text: [ { text: `REPORT ON OUTPUT MEASUREMENT OF ${therapyUnit.toUpperCase() || 'THERAPY UNIT'}\n`, style: 'title' }, { text: `Date: ${document.getElementById('date').value || '---'}`, style: 'subtitle' } ] }, { width: 80, text: '' } ], margin: [0, 0, 0, 20] },
