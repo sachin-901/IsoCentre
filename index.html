@@ -73,15 +73,12 @@
             </header>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <!-- Output Measurement Card -->
                 <div class="qa-card" id="qaOutputMeasurementCard">
                     <h3 style="color: #0056b3; margin-top: 0;">Output Measurement</h3>
                     <p style="font-size: 14px; color: #555; line-height: 1.5;">Absolute dose determination for High Energy Photon Beams.</p>
                     <p style="font-size: 12px; color: #888; margin-top: 10px;">Based on IAEA TRS 398</p>
                     <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
                 </div>
-                
-                <!-- Future QAs can be added here easily -->
             </div>
         </div>
 
@@ -254,7 +251,7 @@
                                 <tr>
                                     <th>Energy</th>
                                     <th>M<sub>raw</sub> (1, 2, 3)<br><span style="font-size: 11px; font-weight:normal;">and Avg M<sub>raw</sub></span></th>
-                                    <th>k<sub>Q</sub></th>
+                                    <th>k<sub>Q</sub> <br><span style="font-size: 10px; font-weight:normal;">(Editable)</span></th>
                                     <th id="th-pdd">PDD (%) <span class="required">*</span></th>
                                     <th>Ref Output <span class="required">*</span><br><span id="th-ref-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
                                     <th>D<sub>w</sub>(z<sub>max</sub>)<br><span id="th-dzmax-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
@@ -343,6 +340,7 @@
                     
                     <div id="chamberKqSection" style="display: none; margin-top: 20px; background: #eef2f5; padding: 15px; border-radius: 5px;">
                         <h3 style="margin-top: 0; color: #0056b3;">Calculate k<sub>Q</sub> Factors</h3>
+                        <p style="font-size: 13px;">Auto-interpolated from absolute TRS-398 data. (Supports PTW 30013, NE 2571, FC65-G, CC13)</p>
                         <div id="chamberKqResults" style="display: flex; gap: 20px; flex-wrap: wrap;"></div>
                     </div>
                     <button id="saveChamberBtn" class="btn" style="margin-top: 20px; background: #28a745; width: 100%;">Save Chamber to Database</button>
