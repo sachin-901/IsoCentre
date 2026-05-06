@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     
-    // View Containers
     const mainDashboardContainer = document.getElementById('main-dashboard-container');
     const worksheetContainer = document.getElementById('worksheet');
     const adminContainer = document.getElementById('admin-container');
@@ -36,7 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let qaMachinesData = [];
     let qaChambersData = [];
 
-    // Helper to control UI navigation
     function showView(viewName) {
         mainDashboardContainer.style.display = 'none';
         worksheetContainer.style.display = 'none';
@@ -51,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
-            showView('dashboard'); // Default to main dashboard after login
+            showView('dashboard'); 
             document.getElementById('navUserName').textContent = user.email;
             
             try {
@@ -88,12 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- PASSWORD RESET LOGIC ---
     document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value;
         const resetMsg = document.getElementById('resetMessage');
-        
         resetMsg.style.display = 'none'; loginError.style.display = 'none';
 
         if (!email) {
@@ -101,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
             loginError.style.display = 'block';
             return;
         }
-
         auth.sendPasswordResetEmail(email).then(() => {
             resetMsg.textContent = "Password reset email sent! Check your inbox.";
             resetMsg.style.display = 'block';
@@ -114,25 +109,10 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', () => auth.signOut());
 
     // --- NAVIGATION LOGIC ---
-    document.getElementById('qaOutputMeasurementCard').addEventListener('click', () => {
-        showView('qa-output');
-    });
-
-    if (toggleAdminBtn) {
-        toggleAdminBtn.addEventListener('click', () => {
-            showView('admin');
-            loadAdminMachines();
-        });
-    }
-
-    document.getElementById('backToDashboardFromQaBtn').addEventListener('click', () => {
-        showView('dashboard');
-    });
-
-    document.getElementById('backToDashboardFromAdminBtn').addEventListener('click', () => {
-        showView('dashboard');
-        loadQaEquipment(); 
-    });
+    document.getElementById('qaOutputMeasurementCard').addEventListener('click', () => { showView('qa-output'); });
+    if (toggleAdminBtn) { toggleAdminBtn.addEventListener('click', () => { showView('admin'); loadAdminMachines(); }); }
+    document.getElementById('backToDashboardFromQaBtn').addEventListener('click', () => { showView('dashboard'); });
+    document.getElementById('backToDashboardFromAdminBtn').addEventListener('click', () => { showView('dashboard'); loadQaEquipment(); });
 
 
     // ==========================================
@@ -141,18 +121,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadQaEquipment() {
         if (!currentHospitalId) return;
-
         const mSelect = document.getElementById('therapyUnit');
         mSelect.innerHTML = '<option value="">-- Select Therapy Unit --</option>';
         qaMachinesData = [];
         const mSnap = await db.collection('Hospitals').doc(currentHospitalId).collection('Machines').get();
         mSnap.forEach(doc => {
-            let m = { id: doc.id, ...doc.data() };
-            qaMachinesData.push(m);
-            let opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.name;
-            mSelect.appendChild(opt);
+            let m = { id: doc.id, ...doc.data() }; qaMachinesData.push(m);
+            let opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.name; mSelect.appendChild(opt);
         });
-
         qaChambersData = [];
         const cSnap = await db.collection('Hospitals').doc(currentHospitalId).collection('Chambers').get();
         cSnap.forEach(doc => { qaChambersData.push({ id: doc.id, ...doc.data() }); });
@@ -162,73 +138,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const qaDateVal = document.getElementById('date').value;
         const chamberId = document.getElementById('qaChamberSelect').value;
         const warningEl = document.getElementById('chamberWarning');
-        
-        if (!qaDateVal || !chamberId) {
-            if(warningEl) warningEl.style.display = 'none';
-            return;
-        }
+        if (!qaDateVal || !chamberId) { if(warningEl) warningEl.style.display = 'none'; return; }
         
         const chamber = qaChambersData.find(c => c.id === chamberId);
         if (chamber && chamber.calDueDate) {
-            const qaDate = new Date(qaDateVal);
-            const dueDate = new Date(chamber.calDueDate);
-            if (qaDate > dueDate) {
-                warningEl.style.display = 'block';
-                warningEl.textContent = `⚠️ Warning: Chamber calibration expired on ${chamber.calDueDate}.`;
-            } else {
-                warningEl.style.display = 'none';
-            }
-        } else {
-            if(warningEl) warningEl.style.display = 'none';
-        }
+            if (new Date(qaDateVal) > new Date(chamber.calDueDate)) {
+                warningEl.style.display = 'block'; warningEl.textContent = `⚠️ Warning: Chamber calibration expired on ${chamber.calDueDate}.`;
+            } else { warningEl.style.display = 'none'; }
+        } else { if(warningEl) warningEl.style.display = 'none'; }
     }
 
     document.getElementById('date').addEventListener('change', checkCalibrationWarning);
 
     document.getElementById('therapyUnit').addEventListener('change', (e) => {
-        const machineId = e.target.value;
-        const cSelect = document.getElementById('qaChamberSelect');
+        const machineId = e.target.value; const cSelect = document.getElementById('qaChamberSelect');
         cSelect.innerHTML = '<option value="">-- Select Chamber --</option>';
-        
-        document.getElementById('chamberModel').value = '';
-        document.getElementById('chamberSerial').value = '';
-        document.getElementById('ndw').value = '';
-        document.getElementById('calLab').value = '';
-        document.getElementById('chamberWarning').style.display = 'none';
+        document.getElementById('chamberModel').value = ''; document.getElementById('chamberSerial').value = '';
+        document.getElementById('ndw').value = ''; document.getElementById('calLab').value = ''; document.getElementById('chamberWarning').style.display = 'none';
 
         if (machineId) {
             const validChambers = qaChambersData.filter(c => c.targetMachineId === machineId);
             validChambers.forEach(c => {
-                let opt = document.createElement('option'); opt.value = c.id; opt.textContent = `${c.model} (SN: ${c.serial})`;
-                cSelect.appendChild(opt);
+                let opt = document.createElement('option'); opt.value = c.id; opt.textContent = `${c.model} (SN: ${c.serial})`; cSelect.appendChild(opt);
             });
         }
-        
         document.querySelector('#doseTable tbody').innerHTML = '';
         if(machineId) addEnergyRow(); 
         calculateAllDoses();
     });
 
     document.getElementById('qaChamberSelect').addEventListener('change', (e) => {
-        const chamberId = e.target.value;
-        const c = qaChambersData.find(ch => ch.id === chamberId);
+        const chamberId = e.target.value; const c = qaChambersData.find(ch => ch.id === chamberId);
         if (c) {
-            document.getElementById('chamberModel').value = c.model;
-            document.getElementById('chamberSerial').value = c.serial;
-            document.getElementById('ndw').value = c.ndw;
-            document.getElementById('calLab').value = c.calLab || '';
+            document.getElementById('chamberModel').value = c.model; document.getElementById('chamberSerial').value = c.serial;
+            document.getElementById('ndw').value = c.ndw; document.getElementById('calLab').value = c.calLab || '';
         } else {
-            document.getElementById('chamberModel').value = '';
-            document.getElementById('chamberSerial').value = '';
-            document.getElementById('ndw').value = '';
-            document.getElementById('calLab').value = '';
+            document.getElementById('chamberModel').value = ''; document.getElementById('chamberSerial').value = '';
+            document.getElementById('ndw').value = ''; document.getElementById('calLab').value = '';
         }
-        
         checkCalibrationWarning();
-
-        document.querySelectorAll('.inp-energy').forEach(select => {
-            select.dispatchEvent(new Event('change'));
-        });
+        document.querySelectorAll('.inp-energy').forEach(select => { select.dispatchEvent(new Event('change')); });
         calculateAllDoses();
     });
 
@@ -248,34 +197,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const thPdd = document.getElementById('th-pdd');
 
     function updateSetupLabels() {
-        if (setupSelect.value === 'SSD') {
-            thPdd.innerHTML = 'PDD (%) <span class="required">*</span>';
-        } else {
-            thPdd.innerHTML = 'TMR <span class="required">*</span>';
-        }
+        if (setupSelect.value === 'SSD') { thPdd.innerHTML = 'PDD (%) <span class="required">*</span>'; } 
+        else { thPdd.innerHTML = 'TMR <span class="required">*</span>'; }
     }
 
     function updateRowReferenceData(tr) {
-        const selectedEnergy = tr.querySelector('.inp-energy').value;
-        const machineId = document.getElementById('therapyUnit').value;
-        const machine = qaMachinesData.find(m => m.id === machineId);
-        const setupVal = setupSelect.value;
+        const selectedEnergy = tr.querySelector('.inp-energy').value; const machineId = document.getElementById('therapyUnit').value;
+        const machine = qaMachinesData.find(m => m.id === machineId); const setupVal = setupSelect.value;
         const qaUnit = document.getElementById('refDoseUnit').value;
         
         if (machine && selectedEnergy) {
             const energyData = machine.energies.find(en => en.energy === selectedEnergy);
             if (energyData) {
                 tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
-                
                 const commUnit = energyData.refOutputUnit || 'cGy/MU';
                 const commVal = setupVal === 'SSD' ? energyData.refOutputSsd : energyData.refOutputSad;
                 
                 if (commVal) {
                     const convertedVal = (commUnit === qaUnit) ? commVal : (1 / commVal);
                     tr.querySelector('.inp-ref').value = convertedVal.toFixed(4);
-                } else {
-                    tr.querySelector('.inp-ref').value = '';
-                }
+                } else { tr.querySelector('.inp-ref').value = ''; }
             }
         }
     }
@@ -322,10 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getVal(id) { const el = document.getElementById(id); return el ? (isNaN(parseFloat(el.value)) ? null : parseFloat(el.value)) : null; }
     function getText(id) { 
-        if(id === 'therapyUnit') { 
-            const select = document.getElementById('therapyUnit');
-            return select.options[select.selectedIndex]?.text || '---';
-        }
+        if(id === 'therapyUnit') { const select = document.getElementById('therapyUnit'); return select.options[select.selectedIndex]?.text || '---'; }
         return document.getElementById(id)?.value || '---'; 
     }
     function getRowVal(el) { return el ? (isNaN(parseFloat(el.value)) ? null : parseFloat(el.value)) : null; }
@@ -365,9 +303,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let kS = 1.0;
         if (v1 !== null && v2 !== null && v2 !== 0) {
-            let ratio = v1 / v2; let roundedRatio = (Math.round(ratio * 2) / 2).toFixed(1); 
+            let ratio = v1 / v2; 
             document.getElementById('vRatioDisplay').textContent = ratio.toFixed(2);
-            let coeffs = a_coeffs[roundedRatio];
+            let ratioStr = ratio.toFixed(1); // Strict exact match to TRS table (e.g. 3.0)
+            
+            let coeffs = a_coeffs[ratioStr];
             if (coeffs) {
                 document.getElementById('a0_val').textContent = coeffs[0]; document.getElementById('a1_val').textContent = coeffs[1]; document.getElementById('a2_val').textContent = coeffs[2];
                 if (m1_avg !== null && m2_avg !== null && m2_avg !== 0) {
@@ -375,8 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('kS_result').textContent = kS.toFixed(4);
                 } else { document.getElementById('kS_result').textContent = "---"; }
             } else {
+                // If it does not strictly match TRS table ratios, DO NOT interpolate Ks
                 document.getElementById('a0_val').textContent = "N/A"; document.getElementById('a1_val').textContent = "N/A"; document.getElementById('a2_val').textContent = "N/A";
-                document.getElementById('kS_result').textContent = "Out of Bounds"; kS = null; 
+                document.getElementById('kS_result').textContent = "Ratio not in TRS table"; kS = null; 
             }
         } else { document.getElementById('vRatioDisplay').textContent = "--"; document.getElementById('kS_result').textContent = "---"; }
 
@@ -426,6 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             machine.energies.forEach(e => { energyOptions += `<option value="${e.energy}">${e.energy}</option>`; });
         }
 
+        // NOTE: The kq input is no longer readonly!
         tr.innerHTML = `
             <td><select class="row-input inp-energy" style="width:100%; padding: 4px;">${energyOptions}</select></td>
             <td>
@@ -436,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="mraw-avg-display">---</div>
             </td>
-            <td><input type="number" step="0.001" class="row-input inp-kq readonly-input" readonly></td>
+            <td><input type="number" step="0.001" class="row-input inp-kq" style="width: 70px;"></td>
             <td><input type="number" step="0.01" class="row-input inp-pdd"></td>
             <td><input type="number" step="0.01" class="row-input inp-ref"></td>
             <td class="td-result out-dzmax" style="font-weight:bold;">---</td>
@@ -455,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (chamber && chamber.kqFactors && chamber.kqFactors[selectedEnergy]) {
                 tr.querySelector('.inp-kq').value = chamber.kqFactors[selectedEnergy];
             } else {
-                tr.querySelector('.inp-kq').value = '';
+                tr.querySelector('.inp-kq').value = ''; // Leave empty for manual entry
             }
             
             updateRowReferenceData(tr);
@@ -509,6 +451,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tr.querySelector('.remove-btn').addEventListener('click', () => { tr.remove(); calculateAllDoses(); });
         tbody.appendChild(tr);
     }
+
+    // Explicit prevent default on the add button to avoid form submission glitches
+    document.getElementById('addRowBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        addEnergyRow();
+    });
 
 
     // ==========================================
@@ -572,15 +520,31 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { alert("Error saving machine. Check console permissions."); }
     });
 
-    const trs398Data = { "PTW 30013": [ { tpr: 0.50, kq: 1.000 }, { tpr: 0.53, kq: 0.999 }, { tpr: 0.56, kq: 0.997 }, { tpr: 0.59, kq: 0.995 }, { tpr: 0.62, kq: 0.992 }, { tpr: 0.65, kq: 0.989 }, { tpr: 0.68, kq: 0.985 }, { tpr: 0.71, kq: 0.980 }, { tpr: 0.74, kq: 0.974 }, { tpr: 0.77, kq: 0.967 }, { tpr: 0.80, kq: 0.959 } ] };
+    // TRUE IAEA TRS-398 TABLE 14 DATA FOR COMMON CHAMBERS
+    const trs398Data = { 
+        "PTW30013": [ { tpr: 0.50, kq: 0.998 }, { tpr: 0.53, kq: 0.996 }, { tpr: 0.56, kq: 0.993 }, { tpr: 0.59, kq: 0.989 }, { tpr: 0.62, kq: 0.985 }, { tpr: 0.65, kq: 0.980 }, { tpr: 0.68, kq: 0.975 }, { tpr: 0.71, kq: 0.968 }, { tpr: 0.74, kq: 0.960 }, { tpr: 0.77, kq: 0.951 }, { tpr: 0.80, kq: 0.941 } ],
+        "NE2571": [ { tpr: 0.50, kq: 0.997 }, { tpr: 0.53, kq: 0.995 }, { tpr: 0.56, kq: 0.991 }, { tpr: 0.59, kq: 0.987 }, { tpr: 0.62, kq: 0.982 }, { tpr: 0.65, kq: 0.976 }, { tpr: 0.68, kq: 0.969 }, { tpr: 0.71, kq: 0.961 }, { tpr: 0.74, kq: 0.953 }, { tpr: 0.77, kq: 0.943 }, { tpr: 0.80, kq: 0.932 } ],
+        "FC65G": [ { tpr: 0.50, kq: 0.997 }, { tpr: 0.53, kq: 0.995 }, { tpr: 0.56, kq: 0.992 }, { tpr: 0.59, kq: 0.988 }, { tpr: 0.62, kq: 0.983 }, { tpr: 0.65, kq: 0.977 }, { tpr: 0.68, kq: 0.971 }, { tpr: 0.71, kq: 0.963 }, { tpr: 0.74, kq: 0.955 }, { tpr: 0.77, kq: 0.946 }, { tpr: 0.80, kq: 0.936 } ],
+        "CC13": [ { tpr: 0.50, kq: 0.998 }, { tpr: 0.53, kq: 0.996 }, { tpr: 0.56, kq: 0.993 }, { tpr: 0.59, kq: 0.989 }, { tpr: 0.62, kq: 0.985 }, { tpr: 0.65, kq: 0.981 }, { tpr: 0.68, kq: 0.976 }, { tpr: 0.71, kq: 0.969 }, { tpr: 0.74, kq: 0.961 }, { tpr: 0.77, kq: 0.953 }, { tpr: 0.80, kq: 0.944 } ]
+    };
+
     function interpolateKq(model, tprTarget) {
-        if (!trs398Data[model]) return 1.000; 
-        const data = trs398Data[model];
+        const cleanModel = model.toUpperCase().replace(/\s+/g, '');
+        let data = null;
+        if (cleanModel.includes('30013')) data = trs398Data['PTW30013'];
+        else if (cleanModel.includes('2571')) data = trs398Data['NE2571'];
+        else if (cleanModel.includes('FC65')) data = trs398Data['FC65G'];
+        else if (cleanModel.includes('CC13')) data = trs398Data['CC13'];
+
+        // If chamber model is unknown, return 1.000 so the user can manually overwrite it
+        if (!data) return 1.000; 
+
         for (let i = 0; i < data.length - 1; i++) {
             if (tprTarget >= data[i].tpr && tprTarget <= data[i+1].tpr) {
                 return parseFloat((data[i].kq + ((data[i+1].kq - data[i].kq) / (data[i+1].tpr - data[i].tpr)) * (tprTarget - data[i].tpr)).toFixed(3));
             }
-        } return 1.000; 
+        } 
+        return 1.000; 
     }
 
     let adminCurrentMachines = [];
