@@ -35,6 +35,11 @@
             <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org" style="width: 100%; margin-bottom: 15px;"></div>
             <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••" style="width: 100%; margin-bottom: 15px;"></div>
             <button id="loginBtn" class="btn" style="width: 100%;">Log In</button>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" id="forgotPasswordLink" style="color: #0056b3; font-size: 13px; text-decoration: none;">Forgot Password?</a>
+            </div>
+            <p id="resetMessage" style="color: #28a745; font-size: 13px; margin-top: 10px; display: none;"></p>
             <p id="loginError" style="color: #d9534f; font-size: 13px; margin-top: 10px; display: none;"></p>
         </div>
     </div>
@@ -53,7 +58,7 @@
             </div>
             <div style="font-size: 14px; display: flex; align-items: center; gap: 15px;">
                 <span id="navUserName">User</span>
-                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius: 3px;">Commissioning</button>
+                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius: 3px;">Commissioning Dashboard</button>
                 <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Log Out</button>
             </div>
         </div>
@@ -252,8 +257,8 @@
         <!-- COMMISSIONING DASHBOARD -->
         <div id="admin-container" class="container" style="display: none; margin-top: 20px;">
             <header style="margin-bottom: 30px;">
-                <h1 style="color: #0056b3;">Equipment Commissioning</h1>
-                <p>Register new Linacs and Chambers to the database.</p>
+                <h1 style="color: #0056b3;">Hospital Admin Dashboard</h1>
+                <p>Register equipment and manage your team.</p>
             </header>
 
             <details class="worksheet-section" open>
@@ -314,6 +319,31 @@
                         <div id="chamberKqResults" style="display: flex; gap: 20px; flex-wrap: wrap;"></div>
                     </div>
                     <button id="saveChamberBtn" class="btn" style="margin-top: 20px; background: #28a745; width: 100%;">Save Chamber to Database</button>
+                </div>
+            </details>
+
+            <details class="worksheet-section" open>
+                <summary><h2>3. Team Management</h2></summary>
+                <div class="section-content">
+                    <p style="font-size: 13px; color: #555;">Invite new physicists to your hospital's workspace. They will receive an email with their temporary password.</p>
+                    <div class="info-grid">
+                        <div class="form-group">
+                            <label>Colleague's Email:</label>
+                            <input type="email" id="inviteEmail" placeholder="colleague@hospital.org">
+                        </div>
+                        <div class="form-group">
+                            <label>Role:</label>
+                            <select id="inviteRole">
+                                <option value="physicist">Physicist (Routine QA Only)</option>
+                                <option value="chief_physicist">Chief Physicist (Full Admin)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Temporary Password:</label>
+                            <input type="text" id="invitePassword" placeholder="Minimum 6 characters">
+                        </div>
+                    </div>
+                    <button id="inviteUserBtn" class="btn" style="margin-top: 15px; background: #17a2b8; width: 100%;">Create User & Add to Team</button>
                 </div>
             </details>
 
