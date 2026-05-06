@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 1. FIREBASE AUTHENTICATION & SETUP
     // ==========================================
-
     const firebaseConfig = {
       apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
       authDomain: "trs-398-output-measurement.firebaseapp.com",
@@ -13,12 +12,19 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
 
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
+    
+    // View Containers
+    const mainDashboardContainer = document.getElementById('main-dashboard-container');
+    const worksheetContainer = document.getElementById('worksheet');
+    const adminContainer = document.getElementById('admin-container');
+
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const loginError = document.getElementById('loginError');
@@ -30,10 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let qaMachinesData = [];
     let qaChambersData = [];
 
+    // Helper to control UI navigation
+    function showView(viewName) {
+        mainDashboardContainer.style.display = 'none';
+        worksheetContainer.style.display = 'none';
+        adminContainer.style.display = 'none';
+
+        if (viewName === 'dashboard') mainDashboardContainer.style.display = 'block';
+        else if (viewName === 'qa-output') worksheetContainer.style.display = 'block';
+        else if (viewName === 'admin') adminContainer.style.display = 'block';
+    }
+
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             loginContainer.style.display = 'none';
             appContainer.style.display = 'block';
+            showView('dashboard'); // Default to main dashboard after login
             document.getElementById('navUserName').textContent = user.email;
             
             try {
@@ -94,6 +112,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     logoutBtn.addEventListener('click', () => auth.signOut());
+
+    // --- NAVIGATION LOGIC ---
+    document.getElementById('qaOutputMeasurementCard').addEventListener('click', () => {
+        showView('qa-output');
+    });
+
+    if (toggleAdminBtn) {
+        toggleAdminBtn.addEventListener('click', () => {
+            showView('admin');
+            loadAdminMachines();
+        });
+    }
+
+    document.getElementById('backToDashboardFromQaBtn').addEventListener('click', () => {
+        showView('dashboard');
+    });
+
+    document.getElementById('backToDashboardFromAdminBtn').addEventListener('click', () => {
+        showView('dashboard');
+        loadQaEquipment(); 
+    });
 
 
     // ==========================================
@@ -471,22 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
         tbody.appendChild(tr);
     }
 
-    document.getElementById('addRowBtn').addEventListener('click', addEnergyRow);
-
 
     // ==========================================
     // 4. COMMISSIONING ADMIN LOGIC
     // ==========================================
-
-    const worksheetContainer = document.getElementById('worksheet');
-    const adminContainer = document.getElementById('admin-container');
-
-    document.getElementById('toggleAdminBtn').addEventListener('click', () => {
-        worksheetContainer.style.display = 'none'; adminContainer.style.display = 'block'; loadAdminMachines();
-    });
-    document.getElementById('backToQaBtn').addEventListener('click', () => {
-        adminContainer.style.display = 'none'; worksheetContainer.style.display = 'block'; loadQaEquipment(); 
-    });
 
     document.getElementById('adminAddEnergyBtn').addEventListener('click', () => {
         const tr = document.createElement('tr');
