@@ -14,6 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         .readonly-input { background-color: #eef2f5; color: #555; border: 1px solid #ccc; cursor: not-allowed; }
+        .qa-card { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 20px; width: 300px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; }
+        .qa-card:hover { transform: translateY(-5px); border-color: #0056b3; box-shadow: 0 8px 15px rgba(0,86,179,0.15); }
     </style>
 </head>
 <body>
@@ -58,12 +60,35 @@
             </div>
             <div style="font-size: 14px; display: flex; align-items: center; gap: 15px;">
                 <span id="navUserName">User</span>
-                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius: 3px;">Commissioning Dashboard</button>
+                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius: 3px;">Admin Dashboard</button>
                 <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Log Out</button>
             </div>
         </div>
 
-        <div id="worksheet" class="container">
+        <!-- MAIN DASHBOARD -->
+        <div id="main-dashboard-container" class="container" style="display: none;">
+            <header style="margin-bottom: 30px;">
+                <h1 style="color: #0056b3;">QA Modules</h1>
+                <p>Select a Quality Assurance module to proceed.</p>
+            </header>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- Output Measurement Card -->
+                <div class="qa-card" id="qaOutputMeasurementCard">
+                    <h3 style="color: #0056b3; margin-top: 0;">Output Measurement</h3>
+                    <p style="font-size: 14px; color: #555; line-height: 1.5;">Absolute dose determination for High Energy Photon Beams.</p>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Based on IAEA TRS 398</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
+                </div>
+                
+                <!-- Future QAs can be added here easily -->
+            </div>
+        </div>
+
+        <!-- QA PORTAL: OUTPUT MEASUREMENT -->
+        <div id="worksheet" class="container" style="display: none;">
+            <button id="backToDashboardFromQaBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
+            
             <header>
                 <h1>Absorbed Dose to Water: High Energy Photon Beams</h1>
                 <p>Based on IAEA TRS 398</p>
@@ -254,10 +279,12 @@
             </div>
         </div>
 
-        <!-- COMMISSIONING DASHBOARD -->
-        <div id="admin-container" class="container" style="display: none; margin-top: 20px;">
+        <!-- ADMIN DASHBOARD -->
+        <div id="admin-container" class="container" style="display: none;">
+            <button id="backToDashboardFromAdminBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
+            
             <header style="margin-bottom: 30px;">
-                <h1 style="color: #0056b3;">Hospital Admin Dashboard</h1>
+                <h1 style="color: #0056b3;">Admin Dashboard</h1>
                 <p>Register equipment and manage your team.</p>
             </header>
 
@@ -347,7 +374,6 @@
                 </div>
             </details>
 
-            <button id="backToQaBtn" class="btn" style="margin-top: 30px; background: #0056b3;">&larr; Back to Routine QA</button>
         </div>
     </div> 
 
