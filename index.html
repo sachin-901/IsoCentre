@@ -68,8 +68,6 @@
                 <div class="form-group"><label>Institute Logo (PDF):</label><input type="file" id="logoInput" accept="image/*"></div>
                 <div class="form-group"><label>User:</label><input type="text" id="userName"></div>
                 <div class="form-group"><label>Date:</label><input type="date" id="date"></div>
-                
-                <!-- NOW A DROPDOWN PULLING FROM DATABASE -->
                 <div class="form-group">
                     <label>Therapy Unit:</label>
                     <select id="therapyUnit" style="font-weight: bold; color: #0056b3;">
@@ -103,12 +101,13 @@
                 <summary><h2>2. Dosimetry Equipment</h2></summary>
                 <div class="section-content">
                     
-                    <!-- NEW CHAMBER SELECTOR -->
                     <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
                         <label style="color: #d9534f; font-weight: bold;">Select Commissioned Chamber:</label>
                         <select id="qaChamberSelect">
                             <option value="">-- First, select a Therapy Unit above --</option>
                         </select>
+                        <!-- Warning Display for Expired Calibration -->
+                        <p id="chamberWarning" style="color: #d9534f; font-weight: bold; font-size: 13px; display: none; margin-top: 5px;">⚠️ Warning: Chamber calibration has expired!</p>
                     </div>
 
                     <div class="info-grid">
@@ -262,10 +261,18 @@
                 <summary><h2>1. Commission New Therapy Unit</h2></summary>
                 <div class="section-content">
                     <div class="form-group" style="max-width: 400px; margin-bottom: 20px;"><label>Therapy Unit Name:</label><input type="text" id="adminMachineName" style="width: 100%;"></div>
-                    <table class="dose-table" id="adminEnergyTable">
-                        <thead><tr><th>Energy (e.g., 6 MV)</th><th>TPR<sub>20,10</sub></th><th>Action</th></tr></thead>
-                        <tbody><tr><td><input type="text" class="admin-energy-name"></td><td><input type="number" step="0.001" class="admin-tpr"></td><td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td></tr></tbody>
-                    </table>
+                    <div class="table-container">
+                        <table class="dose-table" id="adminEnergyTable">
+                            <thead><tr><th>Energy</th><th>TPR<sub>20,10</sub></th><th>Ref PDD (%)</th><th>Ref TMR/TPR</th><th>Action</th></tr></thead>
+                            <tbody><tr>
+                                <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV"></td>
+                                <td><input type="number" step="0.001" class="admin-tpr"></td>
+                                <td><input type="number" step="0.01" class="admin-pdd"></td>
+                                <td><input type="number" step="0.01" class="admin-tmr"></td>
+                                <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
+                            </tr></tbody>
+                        </table>
+                    </div>
                     <button id="adminAddEnergyBtn" class="btn" style="margin-top: 10px; background: #6c757d;">+ Add Energy</button>
                     <button id="saveMachineBtn" class="btn" style="margin-top: 10px; background: #28a745; width: 100%;">Save Machine to Database</button>
                 </div>
@@ -279,6 +286,11 @@
                         <div class="form-group"><label>Serial Number:</label><input type="text" id="adminChamberSerial"></div>
                         <div class="form-group"><label>N<sub>D,w</sub> [cGy/nC]:</label><input type="number" step="0.001" id="adminChamberNdw"></div>
                         <div class="form-group"><label>Target Machine:</label><select id="adminTargetMachine"><option value="">-- Select Machine --</option></select></div>
+                    </div>
+                    <!-- New Calibration Dates -->
+                    <div class="info-grid" style="margin-top: 15px;">
+                        <div class="form-group"><label>Calibration Date:</label><input type="date" id="adminChamberCalDate"></div>
+                        <div class="form-group"><label>Calibration Due Date:</label><input type="date" id="adminChamberCalDueDate"></div>
                     </div>
                     
                     <div id="chamberKqSection" style="display: none; margin-top: 20px; background: #eef2f5; padding: 15px; border-radius: 5px;">
