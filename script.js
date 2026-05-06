@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
       appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
     };
 
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -28,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentHospitalId = null;
     let currentUserRole = null;
     
-    // Arrays to hold data for the Main QA Page
     let qaMachinesData = [];
     let qaChambersData = [];
 
@@ -50,9 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (toggleAdminBtn) toggleAdminBtn.style.display = 'inline-block';
                     }
 
-                    // *** FETCH DATA FOR ROUTINE QA ***
                     loadQaEquipment(); 
-
                 } else {
                     console.warn("User profile missing!");
                 }
@@ -74,6 +70,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // --- PASSWORD RESET LOGIC ---
+    document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const resetMsg = document.getElementById('resetMessage');
+        
+        resetMsg.style.display = 'none'; loginError.style.display = 'none';
+
+        if (!email) {
+            loginError.textContent = "Please enter your email address above first.";
+            loginError.style.display = 'block';
+            return;
+        }
+
+        auth.sendPasswordResetEmail(email).then(() => {
+            resetMsg.textContent = "Password reset email sent! Check your inbox.";
+            resetMsg.style.display = 'block';
+        }).catch((error) => {
+            loginError.textContent = "Error: " + error.message;
+            loginError.style.display = 'block';
+        });
+    });
+
     logoutBtn.addEventListener('click', () => auth.signOut());
 
 
@@ -84,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadQaEquipment() {
         if (!currentHospitalId) return;
 
-        // Fetch Machines
         const mSelect = document.getElementById('therapyUnit');
         mSelect.innerHTML = '<option value="">-- Select Therapy Unit --</option>';
         qaMachinesData = [];
@@ -96,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mSelect.appendChild(opt);
         });
 
-        // Fetch Chambers
         qaChambersData = [];
         const cSnap = await db.collection('Hospitals').doc(currentHospitalId).collection('Chambers').get();
         cSnap.forEach(doc => { qaChambersData.push({ id: doc.id, ...doc.data() }); });
@@ -199,8 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Smart Row Updater ---
-    // Refreshes the Reference Output (with unit conversion) and Ref PDD/TMR for a given row
     function updateRowReferenceData(tr) {
         const selectedEnergy = tr.querySelector('.inp-energy').value;
         const machineId = document.getElementById('therapyUnit').value;
@@ -211,10 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (machine && selectedEnergy) {
             const energyData = machine.energies.find(en => en.energy === selectedEnergy);
             if (energyData) {
-                // Set Setup-Specific PDD/TMR
                 tr.querySelector('.inp-pdd').value = setupVal === 'SSD' ? (energyData.refPdd || '') : (energyData.refTmr || '');
                 
-                // Smart Convert Ref Output based on QA unit vs Commissioned Unit
                 const commUnit = energyData.refOutputUnit || 'cGy/MU';
                 const commVal = setupVal === 'SSD' ? energyData.refOutputSsd : energyData.refOutputSad;
                 
@@ -285,15 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let avgEl = document.getElementById(baseId + '_avg');
         if (count === 0) { if(avgEl) avgEl.textContent = "---"; return null; }
         let avg = sum / count; if(avgEl) avgEl.textContent = avg.toFixed(4); return avg;
-    }
-
-    function getReadingsArray(baseId) {
-        let arr = [];
-        let v1 = getVal(baseId + '_1'), v2 = getVal(baseId + '_2'), v3 = getVal(baseId + '_3');
-        if (v1 !== null) arr.push(v1);
-        if (v2 !== null) arr.push(v2);
-        if (v3 !== null) arr.push(v3);
-        return arr;
     }
 
     function calculateAllDoses() {
@@ -376,7 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!tbody) return;
         const tr = document.createElement('tr');
         
-        // Smart Energy Dropdown based on Therapy Unit
         const machineId = document.getElementById('therapyUnit').value;
         const machine = qaMachinesData.find(m => m.id === machineId);
         let energyOptions = '<option value="">Select...</option>';
@@ -384,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
             machine.energies.forEach(e => { energyOptions += `<option value="${e.energy}">${e.energy}</option>`; });
         }
 
-        // Add row HTML including the "Set Base" button for qualified physicists
         tr.innerHTML = `
             <td><select class="row-input inp-energy" style="width:100%; padding: 4px;">${energyOptions}</select></td>
             <td>
@@ -406,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
         `;
         
-        // When Energy changes, auto-fill kQ AND Reference PDD/TMR and Output
         tr.querySelector('.inp-energy').addEventListener('change', (e) => {
             const selectedEnergy = e.target.value;
             const chamberId = document.getElementById('qaChamberSelect').value;
@@ -422,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateAllDoses();
         });
 
-        // The "Set Baseline" Click Event
         tr.querySelector('.set-baseline-btn').addEventListener('click', async () => {
             const mId = document.getElementById('therapyUnit').value;
             const selectedEnergy = tr.querySelector('.inp-energy').value;
@@ -444,7 +444,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const eIndex = mData.energies.findIndex(e => e.energy === selectedEnergy);
             if (eIndex === -1) return;
             
-            // Revert value back to the originally commissioned unit before saving to DB
             const commUnit = mData.energies[eIndex].refOutputUnit || 'cGy/MU';
             const valueToSave = (commUnit === qaUnit) ? measuredValue : (1 / measuredValue);
 
@@ -455,7 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                // Write the updated machine data back to Firestore
                 await db.collection('Hospitals').doc(currentHospitalId).collection('Machines').doc(mId).update({
                     energies: mData.energies
                 });
@@ -487,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
         worksheetContainer.style.display = 'none'; adminContainer.style.display = 'block'; loadAdminMachines();
     });
     document.getElementById('backToQaBtn').addEventListener('click', () => {
-        adminContainer.style.display = 'none'; worksheetContainer.style.display = 'block'; loadQaEquipment(); // Refresh UI on return
+        adminContainer.style.display = 'none'; worksheetContainer.style.display = 'block'; loadQaEquipment(); 
     });
 
     document.getElementById('adminAddEnergyBtn').addEventListener('click', () => {
@@ -547,7 +545,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { alert("Error saving machine. Check console permissions."); }
     });
 
-    // TRS-398 Interpolation
     const trs398Data = { "PTW 30013": [ { tpr: 0.50, kq: 1.000 }, { tpr: 0.53, kq: 0.999 }, { tpr: 0.56, kq: 0.997 }, { tpr: 0.59, kq: 0.995 }, { tpr: 0.62, kq: 0.992 }, { tpr: 0.65, kq: 0.989 }, { tpr: 0.68, kq: 0.985 }, { tpr: 0.71, kq: 0.980 }, { tpr: 0.74, kq: 0.974 }, { tpr: 0.77, kq: 0.967 }, { tpr: 0.80, kq: 0.959 } ] };
     function interpolateKq(model, tprTarget) {
         if (!trs398Data[model]) return 1.000; 
@@ -571,11 +568,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    let calculatedKqFactors = {};
     document.getElementById('adminTargetMachine').addEventListener('change', (e) => {
         const machineId = e.target.value; const model = document.getElementById('adminChamberModel').value || "PTW 30013"; 
         const kqSection = document.getElementById('chamberKqSection'); const resultsDiv = document.getElementById('chamberKqResults');
-        calculatedKqFactors = {}; resultsDiv.innerHTML = '';
+        let calculatedKqFactors = {}; resultsDiv.innerHTML = '';
         if (!machineId) { kqSection.style.display = 'none'; return; }
         const machine = adminCurrentMachines.find(m => m.id === machineId);
         if(machine && machine.energies) {
@@ -584,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultsDiv.innerHTML += `<div style="background: white; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"><strong>${eng.energy}</strong><br>TPR: ${eng.tpr2010} &rarr; <strong>k<sub>Q</sub>: ${kq}</strong></div>`;
             });
             kqSection.style.display = 'block';
+            document.getElementById('chamberKqResults').dataset.calculatedKq = JSON.stringify(calculatedKqFactors);
         }
     });
 
@@ -594,6 +591,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const calLab = document.getElementById('adminChamberCalLab').value;
         const calDate = document.getElementById('adminChamberCalDate').value;
         const calDueDate = document.getElementById('adminChamberCalDueDate').value;
+        
+        let calculatedKqFactors = {};
+        const storedKq = document.getElementById('chamberKqResults').dataset.calculatedKq;
+        if(storedKq) calculatedKqFactors = JSON.parse(storedKq);
 
         if (!model || !serial || isNaN(ndw) || !machineId) return alert("Please fill out all required chamber details and select a machine.");
         try {
@@ -620,6 +621,53 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { alert("Error saving chamber."); }
     });
 
+    // --- TEAM MANAGEMENT (INVITE USER) ---
+    const inviteUserBtn = document.getElementById('inviteUserBtn');
+    if (inviteUserBtn) {
+        inviteUserBtn.addEventListener('click', async () => {
+            if (!currentHospitalId || currentUserRole !== 'chief_physicist') {
+                return alert("Only the Chief Physicist can add team members.");
+            }
+
+            const email = document.getElementById('inviteEmail').value;
+            const role = document.getElementById('inviteRole').value;
+            const tempPassword = document.getElementById('invitePassword').value;
+
+            if (!email || tempPassword.length < 6) {
+                return alert("Please provide a valid email and a password of at least 6 characters.");
+            }
+
+            try {
+                inviteUserBtn.textContent = "Creating User...";
+                inviteUserBtn.disabled = true;
+
+                const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
+                const newCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, tempPassword);
+                const newUid = newCredential.user.uid;
+
+                await secondaryApp.auth().signOut();
+                await secondaryApp.delete();
+
+                await db.collection('Users').doc(newUid).set({
+                    email: email,
+                    hospitalId: currentHospitalId,
+                    role: role,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Success! User ${email} has been added to your hospital. Tell them to log in with the temporary password and click 'Forgot Password' to change it.`);
+                
+                document.getElementById('inviteEmail').value = '';
+                document.getElementById('invitePassword').value = '';
+            } catch (error) {
+                console.error("Error creating user:", error);
+                alert("Failed to create user: " + error.message);
+            } finally {
+                inviteUserBtn.textContent = "Create User & Add to Team";
+                inviteUserBtn.disabled = false;
+            }
+        });
+    }
 
     // ==========================================
     // 5. PDF GENERATION WITH IsoCentre BRANDING
@@ -675,7 +723,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const docDefinition = {
             pageSize: 'A4', pageOrientation: 'landscape', pageMargins: [40, 40, 40, 50], 
             
-            // --- RESTORED 3-COLUMN TABLE FOOTER ---
             footer: function(currentPage, pageCount) {
                 return {
                     margin: [-40, 15, -40, 0], 
@@ -689,13 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ]
                         ]
                     },
-                    layout: {
-                        defaultBorder: false,
-                        paddingLeft: function() { return 0; },
-                        paddingRight: function() { return 0; },
-                        paddingTop: function() { return 0; },
-                        paddingBottom: function() { return 0; }
-                    }
+                    layout: { defaultBorder: false, paddingLeft: function() { return 0; }, paddingRight: function() { return 0; }, paddingTop: function() { return 0; }, paddingBottom: function() { return 0; } }
                 };
             },
             
