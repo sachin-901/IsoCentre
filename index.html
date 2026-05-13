@@ -8,10 +8,10 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
     <style>
         .readonly-input { background-color: #eef2f5; color: #555; border: 1px solid #ccc; cursor: not-allowed; }
         .qa-card { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 20px; width: 300px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; }
@@ -22,9 +22,13 @@
 
     <div id="login-container" class="container" style="max-width: 400px; margin-top: 100px; overflow: hidden; padding-top: 0;">
         <div style="background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); padding: 30px 20px; margin: 0 -40px 20px -40px; text-align: center;">
-            <h2 style="color: white; margin: 0; font-family: Arial;">Iso<span style="color: #aaccff; font-weight: normal;">Centre</span></h2>
+            <svg width="200" height="50" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="25" cy="25" r="16" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+                <circle cx="25" cy="25" r="6" fill="#00d2ff" />
+                <text x="55" y="33" font-family="Arial" font-size="28" fill="#ffffff" font-weight="bold">Iso<tspan fill="#aaccff" font-weight="normal">Centre</tspan></text>
+            </svg>
         </div>
-        <div style="text-align: center; margin-bottom: 25px;"><p style="color: #555; font-weight: bold; margin: 10px 0;">Secure Clinical QA Portal</p></div>
+        <div style="text-align: center; margin-bottom: 25px;"><p style="color: #555; font-weight: bold;">Secure Clinical QA Portal</p></div>
         <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org"></div>
         <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
         <button id="loginBtn" class="btn" style="width: 100%; margin-top: 15px;">Log In</button>
@@ -33,53 +37,95 @@
     </div>
 
     <div id="app-container" style="display: none;">
-        <nav class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-weight: bold; font-size: 20px;">IsoCentre</span>
-            <div style="display: flex; gap: 15px; align-items: center;">
+        <nav class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center;">
+                <span style="font-weight: bold; font-size: 20px;">IsoCentre</span>
+            </div>
+            <div style="font-size: 14px; display: flex; align-items: center; gap: 15px;">
                 <span id="navUserName">User</span>
                 <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82;">Admin Dashboard</button>
                 <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer;">Log Out</button>
             </div>
         </nav>
 
-        <div id="main-dashboard-container" class="container" style="margin-top: 20px;">
+        <div id="main-dashboard-container" class="container">
             <header><h1>QA Modules</h1><p>Select a Quality Assurance module to proceed.</p></header>
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 <div class="qa-card" id="qaOutputMeasurementCard">
-                    <h3>Output Measurement</h3>
-                    <p>Absolute dose determination (IAEA TRS-398).</p>
-                    <button class="btn" style="width: 100%; margin-top: 15px;">Launch LINAC</button>
+                    <h3>LINAC Output (TRS-398)</h3>
+                    <p>Absolute dose determination for High Energy Photon Beams.</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
                 </div>
                 <div class="qa-card" id="qaBrachytherapyCard">
                     <h3>Brachytherapy QA</h3>
-                    <p>Monthly HDR Afterloader QA & Activity (Ir-192).</p>
-                    <button class="btn" style="width: 100%; margin-top: 15px; background: #28a745;">Launch Brachy</button>
+                    <p>Monthly HDR Afterloader QA & Activity Calibration (Ir-192).</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px; background: #28a745;">Launch Module</button>
                 </div>
             </div>
         </div>
 
-        <div id="worksheet" class="container" style="display: none; margin-top: 20px;">
-            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
+        <div id="worksheet" class="container" style="display: none;">
+            <button id="backToDashboardFromQaBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
             <header><h1>Absorbed Dose to Water: Photon Beams</h1><p>Based on IAEA TRS 398</p></header>
             <section class="info-grid">
-                <div class="form-group"><label>Institute Logo:</label><input type="file" id="logoInput" accept="image/*"></div>
+                <div class="form-group"><label>Institute Logo:</label><input type="file" id="logoInput"></div>
                 <div class="form-group"><label>User:</label><input type="text" id="userName"></div>
                 <div class="form-group"><label>Date:</label><input type="date" id="date"></div>
-                <div class="form-group"><label>Unit:</label><select id="therapyUnit"><option value="">-- Select --</option></select></div>
+                <div class="form-group"><label>Unit:</label><select id="therapyUnit"><option value="">-- Select Unit --</option></select></div>
             </section>
-            <button id="generatePdfBtn" class="btn" style="width: 100%; margin-top: 20px;">Generate LINAC Report</button>
+            
+            <details class="worksheet-section" open><summary><h2>1. Measurement Conditions</h2></summary>
+                <div class="section-content"><div class="info-grid">
+                    <div class="form-group"><label>Setup:</label><select id="setup"><option value="SSD">SSD</option><option value="SAD">SAD</option></select></div>
+                    <div class="form-group"><label>Ref Depth [g/cm²]:</label><input type="number" id="zref" value="10"></div>
+                    <div class="form-group"><label>No. of MU:</label><input type="number" id="num_mu" value="100"></div>
+                </div></div>
+            </details>
+
+            <details class="worksheet-section" open><summary><h2>2. Dosimetry Equipment</h2></summary>
+                <div class="section-content">
+                    <div class="form-group"><label>Select Chamber:</label><select id="qaChamberSelect"><option value="">-- Select --</option></select></div>
+                    <p id="chamberWarning" style="color: #d9534f; font-weight: bold; display: none;">⚠️ Warning: Calibration expired!</p>
+                    <div class="info-grid">
+                        <div class="form-group"><label>Model:</label><input type="text" id="chamberModel" class="readonly-input" readonly></div>
+                        <div class="form-group"><label>NDw [cGy/nC]:</label><input type="number" id="ndw" class="readonly-input" readonly></div>
+                    </div>
+                </div>
+            </details>
+
+            <details class="worksheet-section" open><summary><h2>3. Influence Quantities</h2></summary>
+                <div class="section-content">
+                    <h3>(a) P & T</h3>
+                    <div class="info-grid">
+                        <div class="form-group"><label>Meas T [°C]:</label><input type="number" id="t_meas"></div>
+                        <div class="form-group"><label>Meas P [mbar]:</label><input type="number" id="p_meas"></div>
+                    </div>
+                    <p class="calc-result">kTP = <span id="kTP_result">1.0000</span></p>
+                </div>
+            </details>
+
+            <details class="worksheet-section" open><summary><h2>4. Results</h2></summary>
+                <div class="section-content">
+                    <table class="dose-table" id="doseTable">
+                        <thead><tr><th>Energy</th><th>Mraw Avg</th><th>kQ</th><th id="th-pdd">PDD (%)</th><th>Ref Out</th><th>Dw(zmax)</th><th>Var (%)</th><th>Act</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                    <button id="addRowBtn" class="btn" style="background: #28a745; margin-top: 10px;">+ Add Energy</button>
+                </div>
+            </details>
+            <button id="generatePdfBtn" class="btn" style="width: 100%; margin-top: 20px;">Generate LINAC PDF</button>
         </div>
 
-        <div id="brachy-worksheet" class="container" style="display: none; margin-top: 20px;">
-            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
-            <header><h1 style="color: #0056b3;">Monthly HDR Brachytherapy QA</h1><p>Remote Afterloading HDR Unit (Ir-192)</p></header>
+        <div id="brachy-worksheet" class="container" style="display: none;">
+            <button id="backToDashboardFromBrachyBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
+            <header><h1>Monthly HDR Brachytherapy QA</h1><p>Remote Afterloading HDR Unit (Ir-192)</p></header>
             <section class="info-grid">
                 <div class="form-group"><label>Physicist:</label><input type="text" id="brachyUser"></div>
                 <div class="form-group"><label>QA Date:</label><input type="date" id="brachyDate"></div>
-                <div class="form-group"><label>Unit S/N:</label><input type="text" id="brachyUnitSN"></div>
+                <div class="form-group"><label>Source SN:</label><input type="text" id="brachySourceSN"></div>
             </section>
-            <details class="worksheet-section" open>
-                <summary><h2>1. Source Activity (Ir-192 Decay)</h2></summary>
+            
+            <details class="worksheet-section" open><summary><h2>1. Source Activity (Ir-192 Decay)</h2></summary>
                 <div class="section-content">
                     <div class="info-grid">
                         <div class="form-group"><label>Certified Act (A₀) [Ci]:</label><input type="number" id="brachyA0" step="0.001"></div>
@@ -87,36 +133,35 @@
                         <div class="form-group"><label>Meter [nA]:</label><input type="number" id="brachyMeter" step="0.001"></div>
                         <div class="form-group"><label>k_TP:</label><input type="number" id="brachyKtp" value="1.0000"></div>
                     </div>
-                    <div style="background: #eef2f5; padding: 15px; border-radius: 4px;">
-                        <p>Expected Activity (Decay): <span id="outBrachyCalcAct">---</span> Ci</p>
-                        <p>Measured Activity: <span id="outBrachyMeasAct">---</span> Ci</p>
-                        <p>Deviation: <span id="outBrachyDev">---</span>%</p>
+                    <div style="background: #eef2f5; padding: 15px; border-radius: 4px; border-left: 4px solid #0056b3;">
+                        <p>Expected Act (A): <span id="outBrachyCalcAct">---</span> Ci</p>
+                        <p>Measured Act: <span id="outBrachyMeasAct">---</span> Ci</p>
+                        <p>Deviation: <span id="outBrachyDev" style="font-weight: bold;">---</span>%</p>
                     </div>
                 </div>
             </details>
-            <details class="worksheet-section">
-                <summary><h2>2. Temporal Accuracy (Timer Error)</h2></summary>
+
+            <details class="worksheet-section" open><summary><h2>2. Temporal Accuracy (Timer Error)</h2></summary>
                 <div class="section-content">
                     <div class="info-grid">
                         <div class="form-group"><label>R1 (Continuous) [µC]:</label><input type="number" id="brachyR1"></div>
                         <div class="form-group"><label>R2 (Interrupted) [µC]:</label><input type="number" id="brachyR2"></div>
                         <div class="form-group"><label>Set Time (t) [s]:</label><input type="number" id="brachyTset" value="90"></div>
                     </div>
-                    <p>Timer Error (α): <span id="outBrachyTimerError">---</span> s</p>
+                    <p class="calc-result">Timer Error (α): <span id="outBrachyTimerError">---</span> s</p>
                 </div>
             </details>
-            <button id="generateBrachyPdfBtn" class="btn" style="width: 100%; background: #28a745; margin-top: 20px;">Generate Brachy Report</button>
+            <button id="generateBrachyPdfBtn" class="btn" style="width: 100%; background: #28a745; margin-top: 20px;">Generate Brachy PDF</button>
         </div>
 
-        <div id="admin-container" class="container" style="display: none; margin-top: 20px;">
-            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
-            <header><h1>Admin Dashboard</h1></header>
+        <div id="admin-container" class="container" style="display: none;">
+            <button id="backToDashboardFromAdminBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
+            <h1>Admin Dashboard</h1>
             <details class="worksheet-section" open><summary><h2>Team Management</h2></summary>
                 <div class="section-content">
                     <div class="info-grid">
                         <div class="form-group"><label>Email:</label><input type="email" id="inviteEmail"></div>
-                        <div class="form-group"><label>Role:</label><select id="inviteRole"><option value="physicist">Physicist</option><option value="chief_physicist">Chief Physicist</option></select></div>
-                        <div class="form-group"><label>Temp Password:</label><input type="text" id="invitePassword"></div>
+                        <div class="form-group"><label>Password:</label><input type="text" id="invitePassword"></div>
                     </div>
                     <button id="inviteUserBtn" class="btn" style="width: 100%; background: #17a2b8;">Create User</button>
                 </div>
