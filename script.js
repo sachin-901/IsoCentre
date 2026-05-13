@@ -1,7 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- FIREBASE INITIALIZATION ---
-    const firebaseConfig = { apiKey: "YOUR_ACTUAL_KEY", authDomain: "your-project.firebaseapp.com", projectId: "your-project", storageBucket: "your-project.appspot.com", messagingSenderId: "123", appId: "1:123" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjbjjyuh68NeEQIkwbIzaFtjaT2imXZ1c",
+      authDomain: "trs-398-output-measurement.firebaseapp.com",
+      projectId: "trs-398-output-measurement",
+      storageBucket: "trs-398-output-measurement.firebasestorage.app",
+      messagingSenderId: "942327539222",
+      appId: "1:942327539222:web:a3f8261bb57ce9ee0ab737"
+};
+    //const firebaseConfig = { apiKey: "YOUR_ACTUAL_KEY", authDomain: "your-project.firebaseapp.com", projectId: "your-project", storageBucket: "your-project.appspot.com", messagingSenderId: "123", appId: "1:123" };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
