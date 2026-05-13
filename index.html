@@ -3,101 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IsoCentre - Clinical QA Portal</title>
+    <title>IsoCentre - QA Portal</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        .readonly-input { background-color: #eef2f5; color: #555; border: 1px solid #ccc; cursor: not-allowed; }
+        .qa-card { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 20px; width: 300px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; }
+        .qa-card:hover { transform: translateY(-5px); border-color: #0056b3; box-shadow: 0 8px 15px rgba(0,86,179,0.15); }
+    </style>
 </head>
 <body>
 
-    <div id="login-container" class="container" style="max-width: 400px; margin-top: 80px;">
-        <div class="brand-header">
-            <svg width="180" height="40" viewBox="0 0 200 50">
-                <circle cx="25" cy="25" r="16" fill="none" stroke="#0056b3" stroke-width="2" opacity="0.3"/>
-                <circle cx="25" cy="25" r="6" fill="#00d2ff" />
-                <text x="55" y="33" font-family="Arial" font-size="24" fill="#0056b3" font-weight="bold">IsoCentre</text>
-            </svg>
+    <div id="login-container" class="container" style="max-width: 400px; margin-top: 100px; overflow: hidden; padding-top: 0;">
+        <div style="background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); padding: 30px 20px; margin: 0 -40px 20px -40px; text-align: center;">
+            <h2 style="color: white; margin: 0; font-family: Arial;">Iso<span style="color: #aaccff; font-weight: normal;">Centre</span></h2>
         </div>
-        <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org"></div>
-        <div class="form-group"><label>Password</label><input type="password" id="loginPassword"></div>
-        <button id="loginBtn" class="btn primary-btn" style="width: 100%;">Secure Log In</button>
-        <p id="loginError" class="error-text" style="display:none;"></p>
+        <div style="text-align: center; margin-bottom: 25px;"><p style="color: #555; font-weight: bold; margin: 10px 0;">Secure Clinical QA Portal</p></div>
+        <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org"></div>
+        <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
+        <button id="loginBtn" class="btn" style="width: 100%; margin-top: 15px;">Log In</button>
+        <div style="text-align: center; margin-top: 15px;"><a href="#" id="forgotPasswordLink" style="color: #0056b3; font-size: 13px; text-decoration: none;">Forgot Password?</a></div>
+        <p id="loginError" style="color: #d9534f; font-size: 13px; margin-top: 10px; display: none;"></p>
     </div>
 
     <div id="app-container" style="display: none;">
-        <nav class="navbar">
-            <div class="nav-brand">IsoCentre <span class="nav-subtitle">Clinical QA</span></div>
-            <div class="nav-user-controls">
-                <span id="navUserName"></span>
-                <button id="toggleAdminBtn" class="btn admin-toggle" style="display:none;">Admin Dashboard</button>
-                <button id="logoutBtn" class="btn outline-btn">Log Out</button>
+        <nav class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: bold; font-size: 20px;">IsoCentre</span>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <span id="navUserName">User</span>
+                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82;">Admin Dashboard</button>
+                <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer;">Log Out</button>
             </div>
         </nav>
 
-        <div id="main-dashboard-container" class="container">
-            <header><h1>Quality Assurance Modules</h1></header>
-            <div class="module-grid">
-                <div class="qa-card" id="launchLinacBtn">
-                    <div class="card-icon">⚡</div>
-                    <h3>LINAC Output</h3>
-                    <p>Absolute Dose to Water (TRS-398). Support for PDD, TMR, and kQ interpolation.</p>
-                    <button class="btn primary-btn">Launch Module</button>
+        <div id="main-dashboard-container" class="container" style="margin-top: 20px;">
+            <header><h1>QA Modules</h1><p>Select a Quality Assurance module to proceed.</p></header>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="qa-card" id="qaOutputMeasurementCard">
+                    <h3>Output Measurement</h3>
+                    <p>Absolute dose determination (IAEA TRS-398).</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px;">Launch LINAC</button>
                 </div>
-                <div class="qa-card" id="launchBrachyBtn">
-                    <div class="card-icon">☢️</div>
+                <div class="qa-card" id="qaBrachytherapyCard">
                     <h3>Brachytherapy QA</h3>
-                    <p>HDR Source Decay (Ir-192), Timer Error (α), and Multi-channel indexing.</p>
-                    <button class="btn primary-btn">Launch Module</button>
+                    <p>Monthly HDR Afterloader QA & Activity (Ir-192).</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px; background: #28a745;">Launch Brachy</button>
                 </div>
             </div>
         </div>
 
-        <div id="brachy-worksheet" class="container" style="display: none;">
-            <button class="btn back-btn">&larr; Back to Dashboard</button>
-            <header><h1>HDR Brachytherapy Monthly QA</h1></header>
-
+        <div id="worksheet" class="container" style="display: none; margin-top: 20px;">
+            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
+            <header><h1>Absorbed Dose to Water: Photon Beams</h1><p>Based on IAEA TRS 398</p></header>
             <section class="info-grid">
-                <div class="form-group"><label>QA Date</label><input type="date" id="brachyDate"></div>
-                <div class="form-group"><label>Source Certification Date</label><input type="date" id="brachyCertDate"></div>
-                <div class="form-group"><label>Treatment Unit</label><input type="text" value="Remote Afterloader HDR" readonly class="readonly-input"></div>
+                <div class="form-group"><label>Institute Logo:</label><input type="file" id="logoInput" accept="image/*"></div>
+                <div class="form-group"><label>User:</label><input type="text" id="userName"></div>
+                <div class="form-group"><label>Date:</label><input type="date" id="date"></div>
+                <div class="form-group"><label>Unit:</label><select id="therapyUnit"><option value="">-- Select --</option></select></div>
             </section>
+            <button id="generatePdfBtn" class="btn" style="width: 100%; margin-top: 20px;">Generate LINAC Report</button>
+        </div>
 
+        <div id="brachy-worksheet" class="container" style="display: none; margin-top: 20px;">
+            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
+            <header><h1 style="color: #0056b3;">Monthly HDR Brachytherapy QA</h1><p>Remote Afterloading HDR Unit (Ir-192)</p></header>
+            <section class="info-grid">
+                <div class="form-group"><label>Physicist:</label><input type="text" id="brachyUser"></div>
+                <div class="form-group"><label>QA Date:</label><input type="date" id="brachyDate"></div>
+                <div class="form-group"><label>Unit S/N:</label><input type="text" id="brachyUnitSN"></div>
+            </section>
             <details class="worksheet-section" open>
-                <summary><h2>1. Activity Measurement (Ir-192)</h2></summary>
+                <summary><h2>1. Source Activity (Ir-192 Decay)</h2></summary>
                 <div class="section-content">
                     <div class="info-grid">
-                        <div class="form-group"><label>Cert. Activity (A₀) [Ci]</label><input type="number" id="brachyA0" step="0.01"></div>
-                        <div class="form-group"><label>Well Chamber Rdg [nA]</label><input type="number" id="brachyMavg" step="0.001"></div>
-                        <div class="form-group"><label>Calibration Factor (N_RAKR)</label><input type="number" id="brachyNrakr" value="4.567" step="0.001"></div>
+                        <div class="form-group"><label>Certified Act (A₀) [Ci]:</label><input type="number" id="brachyA0" step="0.001"></div>
+                        <div class="form-group"><label>Cert Date:</label><input type="date" id="brachyCertDate"></div>
+                        <div class="form-group"><label>Meter [nA]:</label><input type="number" id="brachyMeter" step="0.001"></div>
+                        <div class="form-group"><label>k_TP:</label><input type="number" id="brachyKtp" value="1.0000"></div>
                     </div>
-                    <div class="results-display">
-                        <p>Decayed Activity (Expected): <span id="outBrachyCalcAct">---</span> Ci</p>
-                        <p>Measured Activity (Actual): <span id="outBrachyMeasAct">---</span> Ci</p>
-                        <p>Deviation: <span id="outBrachyDev" class="val-bold">---</span>%</p>
+                    <div style="background: #eef2f5; padding: 15px; border-radius: 4px;">
+                        <p>Expected Activity (Decay): <span id="outBrachyCalcAct">---</span> Ci</p>
+                        <p>Measured Activity: <span id="outBrachyMeasAct">---</span> Ci</p>
+                        <p>Deviation: <span id="outBrachyDev">---</span>%</p>
                     </div>
                 </div>
             </details>
-
             <details class="worksheet-section">
-                <summary><h2>2. Timer Accuracy</h2></summary>
+                <summary><h2>2. Temporal Accuracy (Timer Error)</h2></summary>
                 <div class="section-content">
                     <div class="info-grid">
-                        <div class="form-group"><label>R1 (Continuous) [µC]</label><input type="number" id="brachyR1"></div>
-                        <div class="form-group"><label>R2 (Interrupted) [µC]</label><input type="number" id="brachyR2"></div>
-                        <div class="form-group"><label>Set Time (t) [s]</label><input type="number" id="brachyTset" value="90"></div>
+                        <div class="form-group"><label>R1 (Continuous) [µC]:</label><input type="number" id="brachyR1"></div>
+                        <div class="form-group"><label>R2 (Interrupted) [µC]:</label><input type="number" id="brachyR2"></div>
+                        <div class="form-group"><label>Set Time (t) [s]:</label><input type="number" id="brachyTset" value="90"></div>
                     </div>
-                    <div class="results-display">
-                        <p>Timer Error (α): <span id="outBrachyTimerError">---</span> s</p>
-                    </div>
+                    <p>Timer Error (α): <span id="outBrachyTimerError">---</span> s</p>
                 </div>
             </details>
-            <button id="genBrachyPdf" class="btn primary-btn" style="width: 100%; margin-top: 20px;">Generate AERB/TG-56 Report</button>
+            <button id="generateBrachyPdfBtn" class="btn" style="width: 100%; background: #28a745; margin-top: 20px;">Generate Brachy Report</button>
         </div>
 
+        <div id="admin-container" class="container" style="display: none; margin-top: 20px;">
+            <button class="btn back-to-dash" style="background: #6c757d; margin-bottom: 20px;">&larr; Back to Dashboard</button>
+            <header><h1>Admin Dashboard</h1></header>
+            <details class="worksheet-section" open><summary><h2>Team Management</h2></summary>
+                <div class="section-content">
+                    <div class="info-grid">
+                        <div class="form-group"><label>Email:</label><input type="email" id="inviteEmail"></div>
+                        <div class="form-group"><label>Role:</label><select id="inviteRole"><option value="physicist">Physicist</option><option value="chief_physicist">Chief Physicist</option></select></div>
+                        <div class="form-group"><label>Temp Password:</label><input type="text" id="invitePassword"></div>
+                    </div>
+                    <button id="inviteUserBtn" class="btn" style="width: 100%; background: #17a2b8;">Create User</button>
+                </div>
+            </details>
         </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
