@@ -37,7 +37,6 @@
             <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org" style="width: 100%; margin-bottom: 15px;"></div>
             <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••" style="width: 100%; margin-bottom: 15px;"></div>
             <button id="loginBtn" class="btn" style="width: 100%;">Log In</button>
-            
             <div style="text-align: center; margin-top: 15px;">
                 <a href="#" id="forgotPasswordLink" style="color: #0056b3; font-size: 13px; text-decoration: none;">Forgot Password?</a>
             </div>
@@ -47,7 +46,6 @@
     </div>
 
     <div id="app-container" style="display: none;">
-        
         <div class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <div style="display: flex; align-items: center; cursor: pointer;">
                 <svg width="140" height="30" viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
@@ -65,7 +63,6 @@
             </div>
         </div>
 
-        <!-- MAIN DASHBOARD -->
         <div id="main-dashboard-container" class="container" style="display: none;">
             <header style="margin-bottom: 30px;">
                 <h1 style="color: #0056b3;">QA Modules</h1>
@@ -79,13 +76,18 @@
                     <p style="font-size: 12px; color: #888; margin-top: 10px;">Based on IAEA TRS 398</p>
                     <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
                 </div>
+
+                <div class="qa-card" id="qaBrachyCard">
+                    <h3 style="color: #0056b3; margin-top: 0;">HDR Brachytherapy QA</h3>
+                    <p style="font-size: 14px; color: #555; line-height: 1.5;">Monthly safety, electrical, and radiation tests for HDR units.</p>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Based on AAPM TG-56 & AERB Protocols</p>
+                    <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
+                </div>
             </div>
         </div>
 
-        <!-- QA PORTAL: OUTPUT MEASUREMENT -->
         <div id="worksheet" class="container" style="display: none;">
             <button id="backToDashboardFromQaBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
-            
             <header>
                 <h1>Absorbed Dose to Water: High Energy Photon Beams</h1>
                 <p>Based on IAEA TRS 398</p>
@@ -127,7 +129,6 @@
             <details class="worksheet-section" open>
                 <summary><h2>2. Dosimetry Equipment</h2></summary>
                 <div class="section-content">
-                    
                     <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
                         <label style="color: #d9534f; font-weight: bold;">Select Commissioned Chamber:</label>
                         <select id="qaChamberSelect">
@@ -135,246 +136,169 @@
                         </select>
                         <p id="chamberWarning" style="color: #d9534f; font-weight: bold; font-size: 13px; display: none; margin-top: 5px;">⚠️ Warning: Chamber calibration has expired!</p>
                     </div>
-
                     <div class="info-grid">
                         <div class="form-group"><label>Chamber Model:</label><input type="text" id="chamberModel" class="readonly-input" readonly></div>
                         <div class="form-group"><label>Chamber Serial No:</label><input type="text" id="chamberSerial" class="readonly-input" readonly></div>
                         <div class="form-group"><label>N<sub>D,w</sub> [cGy/nC]: <span class="required">*</span></label><input type="number" step="0.001" id="ndw" class="readonly-input" readonly></div>
                         <div class="form-group"><label>Calibration Lab:</label><input type="text" id="calLab" class="readonly-input" readonly></div>
                     </div>
-                    <div class="info-grid" style="margin-top: 15px;">
-                        <div class="form-group"><label>Electrometer Model:</label><input type="text" id="elecModel"></div>
-                        <div class="form-group"><label>Electrometer Serial No:</label><input type="text" id="elecSerial"></div>
-                    </div>
                 </div>
             </details>
-
-            <details class="worksheet-section">
-                <summary><h2>3. Influence Quantities & Corrections</h2></summary>
-                <div class="section-content">
-                    <div class="subsection">
-                        <h3>(a) Pressure & Temperature</h3>
-                        <div class="info-grid">
-                            <div class="form-group"><label>T<sub>0</sub> [°C]:</label><input type="number" id="t0" value="20" step="0.1"></div>
-                            <div class="form-group">
-                                <label>P<sub>0</sub>:</label>
-                                <div class="input-with-unit">
-                                    <input type="number" id="p0" value="1013.3" step="0.1">
-                                    <select id="p0_unit"><option value="mbar" selected>mbar</option><option value="kPa">kPa</option></select>
-                                </div>
-                            </div>
-                            <div class="form-group"><label>Measured T [°C]:</label><input type="number" id="t_meas" step="0.1"></div>
-                            <div class="form-group">
-                                <label>Measured P:</label>
-                                <div class="input-with-unit">
-                                    <input type="number" id="p_meas" step="0.1">
-                                    <select id="p_meas_unit"><option value="mbar" selected>mbar</option><option value="kPa">kPa</option></select>
-                                </div>
-                            </div>
-                        </div>
-                        <p class="calc-result">k<sub>TP</sub> = <span id="kTP_result">1.0000</span></p>
-                    </div>
-
-                    <div class="subsection">
-                        <h3>(b) Polarity Correction</h3>
-                        <p class="instruction-text"><em>Select the routine polarity. M<sub>1</sub> will sync automatically.</em></p>
-                        <div class="reading-group">
-                            <label><input type="radio" name="routine_polarity" value="pos" checked> M<sub>+</sub> (Positive Readings):</label>
-                            <div class="reading-inputs">
-                                <input type="number" id="m_pos_1" step="0.01"><input type="number" id="m_pos_2" step="0.01"><input type="number" id="m_pos_3" step="0.01">
-                            </div>
-                            <span class="avg-display">Avg M<sub>+</sub>: <span id="m_pos_avg">0.000</span></span>
-                        </div>
-                        <div class="reading-group">
-                            <label><input type="radio" name="routine_polarity" value="neg"> M<sub>-</sub> (Negative Readings):</label>
-                            <div class="reading-inputs">
-                                <input type="number" id="m_neg_1" step="0.01"><input type="number" id="m_neg_2" step="0.01"><input type="number" id="m_neg_3" step="0.01">
-                            </div>
-                            <span class="avg-display">Avg M<sub>-</sub>: <span id="m_neg_avg">0.000</span></span>
-                        </div>
-                        <p class="calc-result">k<sub>pol</sub> = <span id="kPol_result">1.0000</span></p>
-                    </div>
-
-                    <div class="subsection">
-                        <h3>(c) Recombination (Pulsed Beams)</h3>
-                        <div class="info-grid">
-                            <div class="form-group"><label>V<sub>1</sub> (Normal) [V]:</label><input type="number" id="v1" step="1"></div>
-                            <div class="form-group"><label>V<sub>2</sub> (Reduced) [V]:</label><input type="number" id="v2" step="1"></div>
-                        </div>
-                        <div class="reading-group">
-                            <label>M<sub>1</sub> (Readings at V<sub>1</sub>):</label>
-                            <div class="reading-inputs">
-                                <input type="number" id="m1_1" step="0.01"><input type="number" id="m1_2" step="0.01"><input type="number" id="m1_3" step="0.01">
-                            </div>
-                            <span class="avg-display">Avg M<sub>1</sub>: <span id="m1_avg">0.000</span></span>
-                        </div>
-                        <div class="reading-group">
-                            <label>M<sub>2</sub> (Readings at V<sub>2</sub>):</label>
-                            <div class="reading-inputs">
-                                <input type="number" id="m2_1" step="0.01"><input type="number" id="m2_2" step="0.01"><input type="number" id="m2_3" step="0.01">
-                            </div>
-                            <span class="avg-display">Avg M<sub>2</sub>: <span id="m2_avg">0.000</span></span>
-                        </div>
-                        <div class="coeff-display">
-                            <strong>Selected Coefficients (Ratio V<sub>1</sub>/V<sub>2</sub> = <span id="vRatioDisplay">--</span>):</strong><br>
-                            a<sub>0</sub>: <span id="a0_val">--</span> | a<sub>1</sub>: <span id="a1_val">--</span> | a<sub>2</sub>: <span id="a2_val">--</span>
-                        </div>
-                        <p class="calc-result">k<sub>s</sub> = <span id="kS_result">1.0000</span></p>
-                    </div>
-                    
-                    <div class="subsection">
-                        <h3>(d) Additional Factors</h3>
-                        <div class="info-grid"><div class="form-group"><label>Electrometer k<sub>elec</sub>:</label><input type="number" id="kelec" value="1.000" step="0.001"></div></div>
-                    </div>
-                </div>
-            </details>
-
-            <details class="worksheet-section" open>
-                <summary><h2>4. Absorbed Dose to Water</h2></summary>
-                <div class="section-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                        <div class="header-controls" style="display:flex; gap: 15px;">
-                            <div class="input-with-unit" style="align-items: center; background: #eef2f5; padding: 5px 10px; border-radius: 4px;">
-                                <label style="font-size: 13px; font-weight: bold; margin-right: 5px; color: #0056b3;">Tolerance:</label>
-                                <select id="toleranceSelect" style="padding: 4px; border: 1px solid #ccc; font-size: 12px; height: 30px;"><option value="3">Daily (±3%)</option><option value="2">Monthly (±2%)</option></select>
-                            </div>
-                            <div class="input-with-unit" style="align-items: center; background: #eef2f5; padding: 5px 10px; border-radius: 4px;">
-                                <label style="font-size: 13px; font-weight: bold; margin-right: 5px; color: #0056b3;">QA Unit Mode:</label>
-                                <select id="refDoseUnit" style="padding: 4px; border: 1px solid #ccc; font-size: 12px; height: 30px;"><option value="cGy/MU" selected>cGy/MU</option><option value="MU/cGy">MU/cGy</option></select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="dose-table" id="doseTable">
-                            <thead>
-                                <tr>
-                                    <th>Energy</th>
-                                    <th>M<sub>raw</sub> (1, 2, 3)<br><span style="font-size: 11px; font-weight:normal;">and Avg M<sub>raw</sub></span></th>
-                                    <th>k<sub>Q</sub> <br><span style="font-size: 10px; font-weight:normal;">(Editable)</span></th>
-                                    <th id="th-pdd">PDD (%) <span class="required">*</span></th>
-                                    <th>Ref Output <span class="required">*</span><br><span id="th-ref-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
-                                    <th>D<sub>w</sub>(z<sub>max</sub>)<br><span id="th-dzmax-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
-                                    <th>Var (%)</th>
-                                    <th class="no-print">Act</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Rows dynamic -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="no-print" style="margin-top: 10px;">
-                        <button id="addRowBtn" class="btn" style="background-color: #28a745; font-size: 14px; padding: 8px 16px;">+ Add Energy Row</button>
-                    </div>
-                </div>
-            </details>
-
             <div class="toolbar bottom-toolbar">
                 <button id="generatePdfBtn" class="btn">Generate Custom PDF Report</button>
             </div>
         </div>
 
-        <!-- ADMIN DASHBOARD -->
+        <div id="brachy-worksheet" class="container" style="display: none;">
+            <button id="backToDashboardFromBrachyBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
+            <header>
+                <h1>Monthly Quality Assurance: HDR Brachytherapy</h1>
+                <p>Safety and Electrical Performance Verification</p>
+            </header>
+
+            <details class="worksheet-section" open>
+                <summary><h2>QA Tests: Electrical & Interlocks</h2></summary>
+                <div class="section-content">
+                    <table class="dose-table" id="brachyElectricalTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">Test Description</th>
+                                <th style="width: 25%;">Status</th>
+                                <th style="width: 35%;">Remarks / Specifications</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:#f8f9fa;"><td colspan="3" style="text-align:left; font-weight:bold; color:#0056b3;">1. INTERLOCKS</td></tr>
+                            <tr>
+                                <td>Treatment Room Door(s)</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Guide Tube & Treatment Unit</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Emergency stop button</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Interrupts irradiation" style="width:90%;"></td>
+                            </tr>
+                            <tr style="background:#f8f9fa;"><td colspan="3" style="text-align:left; font-weight:bold; color:#0056b3;">2. SOURCE SAFE INDICATORS</td></tr>
+                            <tr>
+                                <td>Treatment "ON" / "OFF" indicators</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr style="background:#f8f9fa;"><td colspan="3" style="text-align:left; font-weight:bold; color:#0056b3;">3. CONTROL CONSOLE DISPLAY</td></tr>
+                            <tr>
+                                <td>Treatment ON/OFF/Door Indicators</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Source ON/OFF & Retrieval Indicators</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr style="background:#f8f9fa;"><td colspan="3" style="text-align:left; font-weight:bold; color:#0056b3;">4. CONTROL CONSOLE FUNCTION</td></tr>
+                            <tr>
+                                <td>Power switch & Treatment ON switch</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Emergency OFF switch</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Time display counters</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                            <tr>
+                                <td>Multi-Channel indexer functions</td>
+                                <td>
+                                    <select class="brachy-status">
+                                        <option value="Yes">Yes</option>
+                                        <option value="No">No</option>
+                                        <option value="Other">Other...</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" placeholder="Working?" style="width:90%;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </div>
+
         <div id="admin-container" class="container" style="display: none;">
             <button id="backToDashboardFromAdminBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
-            
             <header style="margin-bottom: 30px;">
                 <h1 style="color: #0056b3;">Admin Dashboard</h1>
                 <p>Register equipment and manage your team.</p>
             </header>
-
             <details class="worksheet-section" open>
                 <summary><h2>1. Commission New Therapy Unit</h2></summary>
-                <div class="section-content">
-                    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;"><label>Therapy Unit Name:</label><input type="text" id="adminMachineName" style="width: 100%;"></div>
-                    <div class="table-container" style="overflow-x: auto;">
-                        <table class="dose-table" id="adminEnergyTable">
-                            <thead><tr>
-                                <th>Energy</th>
-                                <th>TPR<sub>20,10</sub></th>
-                                <th>Ref PDD (%)</th>
-                                <th>Ref TMR</th>
-                                <th>Ref Output Unit</th>
-                                <th>Ref Output (SSD)</th>
-                                <th>Ref Output (SAD)</th>
-                                <th>Act</th>
-                            </tr></thead>
-                            <tbody><tr>
-                                <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV" style="width: 70px;"></td>
-                                <td><input type="number" step="0.001" class="admin-tpr" style="width: 70px;"></td>
-                                <td><input type="number" step="0.01" class="admin-pdd" style="width: 70px;"></td>
-                                <td><input type="number" step="0.01" class="admin-tmr" style="width: 70px;"></td>
-                                <td>
-                                    <select class="admin-ref-unit" style="width: 85px;">
-                                        <option value="cGy/MU">cGy/MU</option>
-                                        <option value="MU/cGy">MU/cGy</option>
-                                    </select>
-                                </td>
-                                <td><input type="number" step="0.001" class="admin-ref-ssd" style="width: 80px;" placeholder="SSD"></td>
-                                <td><input type="number" step="0.001" class="admin-ref-sad" style="width: 80px;" placeholder="SAD"></td>
-                                <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
-                            </tr></tbody>
-                        </table>
-                    </div>
-                    <button id="adminAddEnergyBtn" class="btn" style="margin-top: 10px; background: #6c757d;">+ Add Energy</button>
-                    <button id="saveMachineBtn" class="btn" style="margin-top: 10px; background: #28a745; width: 100%;">Save Machine to Database</button>
-                </div>
-            </details>
-
-            <details class="worksheet-section" open>
-                <summary><h2>2. Commission New Chamber</h2></summary>
-                <div class="section-content">
-                    <div class="info-grid">
-                        <div class="form-group"><label>Chamber Model (e.g., PTW 30013):</label><input type="text" id="adminChamberModel"></div>
-                        <div class="form-group"><label>Serial Number:</label><input type="text" id="adminChamberSerial"></div>
-                        <div class="form-group"><label>N<sub>D,w</sub> [cGy/nC]:</label><input type="number" step="0.001" id="adminChamberNdw"></div>
-                        <div class="form-group"><label>Target Machine:</label><select id="adminTargetMachine"><option value="">-- Select Machine --</option></select></div>
-                    </div>
-                    <div class="info-grid" style="margin-top: 15px;">
-                        <div class="form-group"><label>Calibration Lab:</label><input type="text" id="adminChamberCalLab"></div>
-                        <div class="form-group"><label>Calibration Date:</label><input type="date" id="adminChamberCalDate"></div>
-                        <div class="form-group"><label>Calibration Due Date:</label><input type="date" id="adminChamberCalDueDate"></div>
-                    </div>
-                    
-                    <div id="chamberKqSection" style="display: none; margin-top: 20px; background: #eef2f5; padding: 15px; border-radius: 5px;">
-                        <h3 style="margin-top: 0; color: #0056b3;">Calculate k<sub>Q</sub> Factors</h3>
-                        <p style="font-size: 13px;">Auto-interpolated from absolute TRS-398 data. (Supports PTW 30013, NE 2571, FC65-G, CC13)</p>
-                        <div id="chamberKqResults" style="display: flex; gap: 20px; flex-wrap: wrap;"></div>
-                    </div>
-                    <button id="saveChamberBtn" class="btn" style="margin-top: 20px; background: #28a745; width: 100%;">Save Chamber to Database</button>
-                </div>
-            </details>
-
-            <details class="worksheet-section" open>
-                <summary><h2>3. Team Management</h2></summary>
-                <div class="section-content">
-                    <p style="font-size: 13px; color: #555;">Invite new physicists to your hospital's workspace. They will receive an email with their temporary password.</p>
-                    <div class="info-grid">
-                        <div class="form-group">
-                            <label>Colleague's Email:</label>
-                            <input type="email" id="inviteEmail" placeholder="colleague@hospital.org">
-                        </div>
-                        <div class="form-group">
-                            <label>Role:</label>
-                            <select id="inviteRole">
-                                <option value="physicist">Physicist (Routine QA Only)</option>
-                                <option value="chief_physicist">Chief Physicist (Full Admin)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Temporary Password:</label>
-                            <input type="text" id="invitePassword" placeholder="Minimum 6 characters">
-                        </div>
-                    </div>
-                    <button id="inviteUserBtn" class="btn" style="margin-top: 15px; background: #17a2b8; width: 100%;">Create User & Add to Team</button>
-                </div>
-            </details>
-
+                </details>
         </div>
     </div> 
-
     <script src="script.js"></script>
 </body>
 </html>
