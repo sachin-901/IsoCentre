@@ -8,10 +8,10 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    
     <style>
         .readonly-input { background-color: #eef2f5; color: #555; border: 1px solid #ccc; cursor: not-allowed; }
         .qa-card { background: white; border: 1px solid #ccc; border-radius: 8px; padding: 20px; width: 300px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.2s ease-in-out; }
@@ -24,150 +24,357 @@
         <div style="background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); padding: 30px 20px; margin: 0 -40px 20px -40px; text-align: center;">
             <svg width="200" height="50" viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="25" cy="25" r="16" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+                <line x1="25" y1="4" x2="25" y2="46" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 3" opacity="0.6"/>
+                <line x1="4" y1="25" x2="46" y2="25" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 3" opacity="0.6"/>
                 <circle cx="25" cy="25" r="6" fill="#00d2ff" />
-                <text x="55" y="33" font-family="Arial" font-size="28" fill="#ffffff" font-weight="bold">Iso<tspan fill="#aaccff" font-weight="normal">Centre</tspan></text>
+                <text x="55" y="33" font-family="Arial, sans-serif" font-size="28" fill="#ffffff" font-weight="bold" letter-spacing="1">
+                    Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan>
+                </text>
             </svg>
         </div>
-        <div style="text-align: center; margin-bottom: 25px;"><p style="color: #555; font-weight: bold;">Secure Clinical QA Portal</p></div>
-        <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org"></div>
-        <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••"></div>
-        <button id="loginBtn" class="btn" style="width: 100%; margin-top: 15px;">Log In</button>
-        <div style="text-align: center; margin-top: 15px;"><a href="#" id="forgotPasswordLink" style="color: #0056b3; font-size: 13px; text-decoration: none;">Forgot Password?</a></div>
-        <p id="loginError" style="color: #d9534f; font-size: 13px; margin-top: 10px; display: none;"></p>
+        <div style="text-align: center; margin-bottom: 25px;"><p style="color: #555; font-weight: bold; margin: 0;">Secure Clinical QA Portal</p></div>
+        <div style="text-align: left;">
+            <div class="form-group"><label>Email:</label><input type="email" id="loginEmail" placeholder="physicist@hospital.org" style="width: 100%; margin-bottom: 15px;"></div>
+            <div class="form-group"><label>Password:</label><input type="password" id="loginPassword" placeholder="••••••••" style="width: 100%; margin-bottom: 15px;"></div>
+            <button id="loginBtn" class="btn" style="width: 100%;">Log In</button>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" id="forgotPasswordLink" style="color: #0056b3; font-size: 13px; text-decoration: none;">Forgot Password?</a>
+            </div>
+            <p id="resetMessage" style="color: #28a745; font-size: 13px; margin-top: 10px; display: none;"></p>
+            <p id="loginError" style="color: #d9534f; font-size: 13px; margin-top: 10px; display: none;"></p>
+        </div>
     </div>
 
     <div id="app-container" style="display: none;">
-        <nav class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center;">
-                <span style="font-weight: bold; font-size: 20px;">IsoCentre</span>
+        
+        <div class="navbar" style="background: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; cursor: pointer;">
+                <svg width="140" height="30" viewBox="0 0 140 30" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="15" cy="15" r="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.4"/>
+                    <line x1="15" y1="2" x2="15" y2="28" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                    <line x1="2" y1="15" x2="28" y2="15" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="2 2" opacity="0.7"/>
+                    <circle cx="15" cy="15" r="3.5" fill="#00d2ff" />
+                    <text x="35" y="21" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold" letter-spacing="0.5">Iso<tspan font-weight="normal" fill="#aaccff">Centre</tspan></text>
+                </svg>
             </div>
             <div style="font-size: 14px; display: flex; align-items: center; gap: 15px;">
                 <span id="navUserName">User</span>
-                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82;">Admin Dashboard</button>
-                <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer;">Log Out</button>
+                <button id="toggleAdminBtn" class="btn" style="background: #00d2ff; color: #003d82; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; border-radius: 3px;">Admin Dashboard</button>
+                <button id="logoutBtn" style="background: transparent; border: 1px solid white; color: white; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Log Out</button>
             </div>
-        </nav>
+        </div>
 
-        <div id="main-dashboard-container" class="container">
-            <header><h1>QA Modules</h1><p>Select a Quality Assurance module to proceed.</p></header>
+        <!-- MAIN DASHBOARD -->
+        <div id="main-dashboard-container" class="container" style="display: none;">
+            <header style="margin-bottom: 30px;">
+                <h1 style="color: #0056b3;">QA Modules</h1>
+                <p>Select a Quality Assurance module to proceed.</p>
+            </header>
+            
             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                 <div class="qa-card" id="qaOutputMeasurementCard">
-                    <h3>LINAC Output (TRS-398)</h3>
-                    <p>Absolute dose determination for High Energy Photon Beams.</p>
+                    <h3 style="color: #0056b3; margin-top: 0;">Output Measurement</h3>
+                    <p style="font-size: 14px; color: #555; line-height: 1.5;">Absolute dose determination for High Energy Photon Beams.</p>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Based on IAEA TRS 398</p>
                     <button class="btn" style="width: 100%; margin-top: 15px;">Launch Module</button>
-                </div>
-                <div class="qa-card" id="qaBrachytherapyCard">
-                    <h3>Brachytherapy QA</h3>
-                    <p>Monthly HDR Afterloader QA & Activity Calibration (Ir-192).</p>
-                    <button class="btn" style="width: 100%; margin-top: 15px; background: #28a745;">Launch Module</button>
                 </div>
             </div>
         </div>
 
+        <!-- QA PORTAL: OUTPUT MEASUREMENT -->
         <div id="worksheet" class="container" style="display: none;">
             <button id="backToDashboardFromQaBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
-            <header><h1>Absorbed Dose to Water: Photon Beams</h1><p>Based on IAEA TRS 398</p></header>
+            
+            <header>
+                <h1>Absorbed Dose to Water: High Energy Photon Beams</h1>
+                <p>Based on IAEA TRS 398</p>
+            </header>
+
             <section class="info-grid">
-                <div class="form-group"><label>Institute Logo:</label><input type="file" id="logoInput"></div>
+                <div class="form-group"><label>Institute Logo (PDF):</label><input type="file" id="logoInput" accept="image/*"></div>
                 <div class="form-group"><label>User:</label><input type="text" id="userName"></div>
                 <div class="form-group"><label>Date:</label><input type="date" id="date"></div>
-                <div class="form-group"><label>Unit:</label><select id="therapyUnit"><option value="">-- Select Unit --</option></select></div>
+                <div class="form-group">
+                    <label>Therapy Unit:</label>
+                    <select id="therapyUnit" style="font-weight: bold; color: #0056b3;">
+                        <option value="">-- Select Unit --</option>
+                    </select>
+                </div>
             </section>
-            
-            <details class="worksheet-section" open><summary><h2>1. Measurement Conditions</h2></summary>
-                <div class="section-content"><div class="info-grid">
-                    <div class="form-group"><label>Setup:</label><select id="setup"><option value="SSD">SSD</option><option value="SAD">SAD</option></select></div>
-                    <div class="form-group"><label>Ref Depth [g/cm²]:</label><input type="number" id="zref" value="10"></div>
-                    <div class="form-group"><label>No. of MU:</label><input type="number" id="num_mu" value="100"></div>
-                </div></div>
-            </details>
 
-            <details class="worksheet-section" open><summary><h2>2. Dosimetry Equipment</h2></summary>
+            <details class="worksheet-section" open>
+                <summary><h2>1. Measurement Conditions</h2></summary>
                 <div class="section-content">
-                    <div class="form-group"><label>Select Chamber:</label><select id="qaChamberSelect"><option value="">-- Select --</option></select></div>
-                    <p id="chamberWarning" style="color: #d9534f; font-weight: bold; display: none;">⚠️ Warning: Calibration expired!</p>
                     <div class="info-grid">
-                        <div class="form-group"><label>Model:</label><input type="text" id="chamberModel" class="readonly-input" readonly></div>
-                        <div class="form-group"><label>NDw [cGy/nC]:</label><input type="number" id="ndw" class="readonly-input" readonly></div>
+                        <div class="form-group">
+                            <label>Phantom Material:</label>
+                            <select id="phantomSelect">
+                                <option value="Water">Water</option>
+                                <option value="Slabs">Slabs</option>
+                                <option value="Other">Other...</option>
+                            </select>
+                            <input type="text" id="phantomOther" placeholder="Specify..." style="display:none; margin-top:5px;">
+                        </div>
+                        <div class="form-group"><label>Set-up:</label><select id="setup"><option value="SSD">SSD</option><option value="SAD">SAD</option></select></div>
+                        <div class="form-group"><label>Ref Depth (Z<sub>ref</sub>) [g/cm²]:</label><input type="number" value="10" step="0.1" id="zref"></div>
+                        <div class="form-group"><label>Field Size [cm x cm]:</label><input type="text" value="10 x 10" id="fieldSize"></div>
+                        <div class="form-group"><label>No. of MU: <span class="required">*</span></label><input type="number" value="100" step="1" id="num_mu"></div>
                     </div>
                 </div>
             </details>
 
-            <details class="worksheet-section" open><summary><h2>3. Influence Quantities</h2></summary>
+            <details class="worksheet-section" open>
+                <summary><h2>2. Dosimetry Equipment</h2></summary>
                 <div class="section-content">
-                    <h3>(a) P & T</h3>
-                    <div class="info-grid">
-                        <div class="form-group"><label>Meas T [°C]:</label><input type="number" id="t_meas"></div>
-                        <div class="form-group"><label>Meas P [mbar]:</label><input type="number" id="p_meas"></div>
+                    
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
+                        <label style="color: #d9534f; font-weight: bold;">Select Commissioned Chamber:</label>
+                        <select id="qaChamberSelect">
+                            <option value="">-- First, select a Therapy Unit above --</option>
+                        </select>
+                        <p id="chamberWarning" style="color: #d9534f; font-weight: bold; font-size: 13px; display: none; margin-top: 5px;">⚠️ Warning: Chamber calibration has expired!</p>
                     </div>
-                    <p class="calc-result">kTP = <span id="kTP_result">1.0000</span></p>
+
+                    <div class="info-grid">
+                        <div class="form-group"><label>Chamber Model:</label><input type="text" id="chamberModel" class="readonly-input" readonly></div>
+                        <div class="form-group"><label>Chamber Serial No:</label><input type="text" id="chamberSerial" class="readonly-input" readonly></div>
+                        <div class="form-group"><label>N<sub>D,w</sub> [cGy/nC]: <span class="required">*</span></label><input type="number" step="0.001" id="ndw" class="readonly-input" readonly></div>
+                        <div class="form-group"><label>Calibration Lab:</label><input type="text" id="calLab" class="readonly-input" readonly></div>
+                    </div>
+                    <div class="info-grid" style="margin-top: 15px;">
+                        <div class="form-group"><label>Electrometer Model:</label><input type="text" id="elecModel"></div>
+                        <div class="form-group"><label>Electrometer Serial No:</label><input type="text" id="elecSerial"></div>
+                    </div>
                 </div>
             </details>
 
-            <details class="worksheet-section" open><summary><h2>4. Results</h2></summary>
+            <details class="worksheet-section">
+                <summary><h2>3. Influence Quantities & Corrections</h2></summary>
                 <div class="section-content">
-                    <table class="dose-table" id="doseTable">
-                        <thead><tr><th>Energy</th><th>Mraw Avg</th><th>kQ</th><th id="th-pdd">PDD (%)</th><th>Ref Out</th><th>Dw(zmax)</th><th>Var (%)</th><th>Act</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                    <button id="addRowBtn" class="btn" style="background: #28a745; margin-top: 10px;">+ Add Energy</button>
+                    <div class="subsection">
+                        <h3>(a) Pressure & Temperature</h3>
+                        <div class="info-grid">
+                            <div class="form-group"><label>T<sub>0</sub> [°C]:</label><input type="number" id="t0" value="20" step="0.1"></div>
+                            <div class="form-group">
+                                <label>P<sub>0</sub>:</label>
+                                <div class="input-with-unit">
+                                    <input type="number" id="p0" value="1013.3" step="0.1">
+                                    <select id="p0_unit"><option value="mbar" selected>mbar</option><option value="kPa">kPa</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group"><label>Measured T [°C]:</label><input type="number" id="t_meas" step="0.1"></div>
+                            <div class="form-group">
+                                <label>Measured P:</label>
+                                <div class="input-with-unit">
+                                    <input type="number" id="p_meas" step="0.1">
+                                    <select id="p_meas_unit"><option value="mbar" selected>mbar</option><option value="kPa">kPa</option></select>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="calc-result">k<sub>TP</sub> = <span id="kTP_result">1.0000</span></p>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(b) Polarity Correction</h3>
+                        <p class="instruction-text"><em>Select the routine polarity. M<sub>1</sub> will sync automatically.</em></p>
+                        <div class="reading-group">
+                            <label><input type="radio" name="routine_polarity" value="pos" checked> M<sub>+</sub> (Positive Readings):</label>
+                            <div class="reading-inputs">
+                                <input type="number" id="m_pos_1" step="0.01"><input type="number" id="m_pos_2" step="0.01"><input type="number" id="m_pos_3" step="0.01">
+                            </div>
+                            <span class="avg-display">Avg M<sub>+</sub>: <span id="m_pos_avg">0.000</span></span>
+                        </div>
+                        <div class="reading-group">
+                            <label><input type="radio" name="routine_polarity" value="neg"> M<sub>-</sub> (Negative Readings):</label>
+                            <div class="reading-inputs">
+                                <input type="number" id="m_neg_1" step="0.01"><input type="number" id="m_neg_2" step="0.01"><input type="number" id="m_neg_3" step="0.01">
+                            </div>
+                            <span class="avg-display">Avg M<sub>-</sub>: <span id="m_neg_avg">0.000</span></span>
+                        </div>
+                        <p class="calc-result">k<sub>pol</sub> = <span id="kPol_result">1.0000</span></p>
+                    </div>
+
+                    <div class="subsection">
+                        <h3>(c) Recombination (Pulsed Beams)</h3>
+                        <div class="info-grid">
+                            <div class="form-group"><label>V<sub>1</sub> (Normal) [V]:</label><input type="number" id="v1" step="1"></div>
+                            <div class="form-group"><label>V<sub>2</sub> (Reduced) [V]:</label><input type="number" id="v2" step="1"></div>
+                        </div>
+                        <div class="reading-group">
+                            <label>M<sub>1</sub> (Readings at V<sub>1</sub>):</label>
+                            <div class="reading-inputs">
+                                <input type="number" id="m1_1" step="0.01"><input type="number" id="m1_2" step="0.01"><input type="number" id="m1_3" step="0.01">
+                            </div>
+                            <span class="avg-display">Avg M<sub>1</sub>: <span id="m1_avg">0.000</span></span>
+                        </div>
+                        <div class="reading-group">
+                            <label>M<sub>2</sub> (Readings at V<sub>2</sub>):</label>
+                            <div class="reading-inputs">
+                                <input type="number" id="m2_1" step="0.01"><input type="number" id="m2_2" step="0.01"><input type="number" id="m2_3" step="0.01">
+                            </div>
+                            <span class="avg-display">Avg M<sub>2</sub>: <span id="m2_avg">0.000</span></span>
+                        </div>
+                        <div class="coeff-display">
+                            <strong>Selected Coefficients (Ratio V<sub>1</sub>/V<sub>2</sub> = <span id="vRatioDisplay">--</span>):</strong><br>
+                            a<sub>0</sub>: <span id="a0_val">--</span> | a<sub>1</sub>: <span id="a1_val">--</span> | a<sub>2</sub>: <span id="a2_val">--</span>
+                        </div>
+                        <p class="calc-result">k<sub>s</sub> = <span id="kS_result">1.0000</span></p>
+                    </div>
+                    
+                    <div class="subsection">
+                        <h3>(d) Additional Factors</h3>
+                        <div class="info-grid"><div class="form-group"><label>Electrometer k<sub>elec</sub>:</label><input type="number" id="kelec" value="1.000" step="0.001"></div></div>
+                    </div>
                 </div>
             </details>
-            <button id="generatePdfBtn" class="btn" style="width: 100%; margin-top: 20px;">Generate LINAC PDF</button>
+
+            <details class="worksheet-section" open>
+                <summary><h2>4. Absorbed Dose to Water</h2></summary>
+                <div class="section-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="header-controls" style="display:flex; gap: 15px;">
+                            <div class="input-with-unit" style="align-items: center; background: #eef2f5; padding: 5px 10px; border-radius: 4px;">
+                                <label style="font-size: 13px; font-weight: bold; margin-right: 5px; color: #0056b3;">Tolerance:</label>
+                                <select id="toleranceSelect" style="padding: 4px; border: 1px solid #ccc; font-size: 12px; height: 30px;"><option value="3">Daily (±3%)</option><option value="2">Monthly (±2%)</option></select>
+                            </div>
+                            <div class="input-with-unit" style="align-items: center; background: #eef2f5; padding: 5px 10px; border-radius: 4px;">
+                                <label style="font-size: 13px; font-weight: bold; margin-right: 5px; color: #0056b3;">QA Unit Mode:</label>
+                                <select id="refDoseUnit" style="padding: 4px; border: 1px solid #ccc; font-size: 12px; height: 30px;"><option value="cGy/MU" selected>cGy/MU</option><option value="MU/cGy">MU/cGy</option></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="dose-table" id="doseTable">
+                            <thead>
+                                <tr>
+                                    <th>Energy</th>
+                                    <th>M<sub>raw</sub> (1, 2, 3)<br><span style="font-size: 11px; font-weight:normal;">and Avg M<sub>raw</sub></span></th>
+                                    <th>k<sub>Q</sub> <br><span style="font-size: 10px; font-weight:normal;">(Editable)</span></th>
+                                    <th id="th-pdd">PDD (%) <span class="required">*</span></th>
+                                    <th>Ref Output <span class="required">*</span><br><span id="th-ref-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
+                                    <th>D<sub>w</sub>(z<sub>max</sub>)<br><span id="th-dzmax-unit" style="font-size: 10px; font-weight:normal;">[cGy/MU]</span></th>
+                                    <th>Var (%)</th>
+                                    <th class="no-print">Act</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows dynamic -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="no-print" style="margin-top: 10px;">
+                        <button id="addRowBtn" class="btn" style="background-color: #28a745; font-size: 14px; padding: 8px 16px;">+ Add Energy Row</button>
+                    </div>
+                </div>
+            </details>
+
+            <div class="toolbar bottom-toolbar">
+                <button id="generatePdfBtn" class="btn">Generate Custom PDF Report</button>
+            </div>
         </div>
 
-        <div id="brachy-worksheet" class="container" style="display: none;">
-            <button id="backToDashboardFromBrachyBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
-            <header><h1>Monthly HDR Brachytherapy QA</h1><p>Remote Afterloading HDR Unit (Ir-192)</p></header>
-            <section class="info-grid">
-                <div class="form-group"><label>Physicist:</label><input type="text" id="brachyUser"></div>
-                <div class="form-group"><label>QA Date:</label><input type="date" id="brachyDate"></div>
-                <div class="form-group"><label>Source SN:</label><input type="text" id="brachySourceSN"></div>
-            </section>
-            
-            <details class="worksheet-section" open><summary><h2>1. Source Activity (Ir-192 Decay)</h2></summary>
-                <div class="section-content">
-                    <div class="info-grid">
-                        <div class="form-group"><label>Certified Act (A₀) [Ci]:</label><input type="number" id="brachyA0" step="0.001"></div>
-                        <div class="form-group"><label>Cert Date:</label><input type="date" id="brachyCertDate"></div>
-                        <div class="form-group"><label>Meter [nA]:</label><input type="number" id="brachyMeter" step="0.001"></div>
-                        <div class="form-group"><label>k_TP:</label><input type="number" id="brachyKtp" value="1.0000"></div>
-                    </div>
-                    <div style="background: #eef2f5; padding: 15px; border-radius: 4px; border-left: 4px solid #0056b3;">
-                        <p>Expected Act (A): <span id="outBrachyCalcAct">---</span> Ci</p>
-                        <p>Measured Act: <span id="outBrachyMeasAct">---</span> Ci</p>
-                        <p>Deviation: <span id="outBrachyDev" style="font-weight: bold;">---</span>%</p>
-                    </div>
-                </div>
-            </details>
-
-            <details class="worksheet-section" open><summary><h2>2. Temporal Accuracy (Timer Error)</h2></summary>
-                <div class="section-content">
-                    <div class="info-grid">
-                        <div class="form-group"><label>R1 (Continuous) [µC]:</label><input type="number" id="brachyR1"></div>
-                        <div class="form-group"><label>R2 (Interrupted) [µC]:</label><input type="number" id="brachyR2"></div>
-                        <div class="form-group"><label>Set Time (t) [s]:</label><input type="number" id="brachyTset" value="90"></div>
-                    </div>
-                    <p class="calc-result">Timer Error (α): <span id="outBrachyTimerError">---</span> s</p>
-                </div>
-            </details>
-            <button id="generateBrachyPdfBtn" class="btn" style="width: 100%; background: #28a745; margin-top: 20px;">Generate Brachy PDF</button>
-        </div>
-
+        <!-- ADMIN DASHBOARD -->
         <div id="admin-container" class="container" style="display: none;">
             <button id="backToDashboardFromAdminBtn" class="btn" style="margin-bottom: 20px; background: #6c757d;">&larr; Back to Dashboard</button>
-            <h1>Admin Dashboard</h1>
-            <details class="worksheet-section" open><summary><h2>Team Management</h2></summary>
+            
+            <header style="margin-bottom: 30px;">
+                <h1 style="color: #0056b3;">Admin Dashboard</h1>
+                <p>Register equipment and manage your team.</p>
+            </header>
+
+            <details class="worksheet-section" open>
+                <summary><h2>1. Commission New Therapy Unit</h2></summary>
                 <div class="section-content">
-                    <div class="info-grid">
-                        <div class="form-group"><label>Email:</label><input type="email" id="inviteEmail"></div>
-                        <div class="form-group"><label>Password:</label><input type="text" id="invitePassword"></div>
+                    <div class="form-group" style="max-width: 400px; margin-bottom: 20px;"><label>Therapy Unit Name:</label><input type="text" id="adminMachineName" style="width: 100%;"></div>
+                    <div class="table-container" style="overflow-x: auto;">
+                        <table class="dose-table" id="adminEnergyTable">
+                            <thead><tr>
+                                <th>Energy</th>
+                                <th>TPR<sub>20,10</sub></th>
+                                <th>Ref PDD (%)</th>
+                                <th>Ref TMR</th>
+                                <th>Ref Output Unit</th>
+                                <th>Ref Output (SSD)</th>
+                                <th>Ref Output (SAD)</th>
+                                <th>Act</th>
+                            </tr></thead>
+                            <tbody><tr>
+                                <td><input type="text" class="admin-energy-name" placeholder="e.g. 6 MV" style="width: 70px;"></td>
+                                <td><input type="number" step="0.001" class="admin-tpr" style="width: 70px;"></td>
+                                <td><input type="number" step="0.01" class="admin-pdd" style="width: 70px;"></td>
+                                <td><input type="number" step="0.01" class="admin-tmr" style="width: 70px;"></td>
+                                <td>
+                                    <select class="admin-ref-unit" style="width: 85px;">
+                                        <option value="cGy/MU">cGy/MU</option>
+                                        <option value="MU/cGy">MU/cGy</option>
+                                    </select>
+                                </td>
+                                <td><input type="number" step="0.001" class="admin-ref-ssd" style="width: 80px;" placeholder="SSD"></td>
+                                <td><input type="number" step="0.001" class="admin-ref-sad" style="width: 80px;" placeholder="SAD"></td>
+                                <td><button class="btn admin-remove-btn" style="background: #d9534f; padding: 4px 8px;">X</button></td>
+                            </tr></tbody>
+                        </table>
                     </div>
-                    <button id="inviteUserBtn" class="btn" style="width: 100%; background: #17a2b8;">Create User</button>
+                    <button id="adminAddEnergyBtn" class="btn" style="margin-top: 10px; background: #6c757d;">+ Add Energy</button>
+                    <button id="saveMachineBtn" class="btn" style="margin-top: 10px; background: #28a745; width: 100%;">Save Machine to Database</button>
                 </div>
             </details>
+
+            <details class="worksheet-section" open>
+                <summary><h2>2. Commission New Chamber</h2></summary>
+                <div class="section-content">
+                    <div class="info-grid">
+                        <div class="form-group"><label>Chamber Model (e.g., PTW 30013):</label><input type="text" id="adminChamberModel"></div>
+                        <div class="form-group"><label>Serial Number:</label><input type="text" id="adminChamberSerial"></div>
+                        <div class="form-group"><label>N<sub>D,w</sub> [cGy/nC]:</label><input type="number" step="0.001" id="adminChamberNdw"></div>
+                        <div class="form-group"><label>Target Machine:</label><select id="adminTargetMachine"><option value="">-- Select Machine --</option></select></div>
+                    </div>
+                    <div class="info-grid" style="margin-top: 15px;">
+                        <div class="form-group"><label>Calibration Lab:</label><input type="text" id="adminChamberCalLab"></div>
+                        <div class="form-group"><label>Calibration Date:</label><input type="date" id="adminChamberCalDate"></div>
+                        <div class="form-group"><label>Calibration Due Date:</label><input type="date" id="adminChamberCalDueDate"></div>
+                    </div>
+                    
+                    <div id="chamberKqSection" style="display: none; margin-top: 20px; background: #eef2f5; padding: 15px; border-radius: 5px;">
+                        <h3 style="margin-top: 0; color: #0056b3;">Calculate k<sub>Q</sub> Factors</h3>
+                        <p style="font-size: 13px;">Auto-interpolated from absolute TRS-398 data. (Supports PTW 30013, NE 2571, FC65-G, CC13)</p>
+                        <div id="chamberKqResults" style="display: flex; gap: 20px; flex-wrap: wrap;"></div>
+                    </div>
+                    <button id="saveChamberBtn" class="btn" style="margin-top: 20px; background: #28a745; width: 100%;">Save Chamber to Database</button>
+                </div>
+            </details>
+
+            <details class="worksheet-section" open>
+                <summary><h2>3. Team Management</h2></summary>
+                <div class="section-content">
+                    <p style="font-size: 13px; color: #555;">Invite new physicists to your hospital's workspace. They will receive an email with their temporary password.</p>
+                    <div class="info-grid">
+                        <div class="form-group">
+                            <label>Colleague's Email:</label>
+                            <input type="email" id="inviteEmail" placeholder="colleague@hospital.org">
+                        </div>
+                        <div class="form-group">
+                            <label>Role:</label>
+                            <select id="inviteRole">
+                                <option value="physicist">Physicist (Routine QA Only)</option>
+                                <option value="chief_physicist">Chief Physicist (Full Admin)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Temporary Password:</label>
+                            <input type="text" id="invitePassword" placeholder="Minimum 6 characters">
+                        </div>
+                    </div>
+                    <button id="inviteUserBtn" class="btn" style="margin-top: 15px; background: #17a2b8; width: 100%;">Create User & Add to Team</button>
+                </div>
+            </details>
+
         </div>
-    </div>
+    </div> 
+
     <script src="script.js"></script>
 </body>
 </html>
